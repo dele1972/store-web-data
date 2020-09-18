@@ -25,8 +25,8 @@
         $domDocument->loadHTMLFile($real_file);
 
         try {
-            #$coronaData = new CoronaDataFromHtml($domDocument);
-            $coronaData = new CoronaDataFromHtml(new stdClass());
+            $coronaData = new CoronaDataFromHtml($domDocument);
+            #$coronaData = new CoronaDataFromHtml(new stdClass());
         } catch (TypeError $e) {
             // logging?
             //    Constructor Parameter Type is not a DomDocument Object

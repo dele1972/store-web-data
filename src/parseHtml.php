@@ -12,15 +12,18 @@
         $real_file = AppConfig::$htmlFileInputPath . $file;
         echo "<hr/>";
         echo "<h2>$real_file</h2>";
-        $dom = new DomDocument();
+        $domDocument = new DomDocument();
+        
+        // we don't want to see warnings about invalid tags in the DomDocument
         libxml_use_internal_errors(true);
-        $dom->loadHTMLFile($real_file);
 
-        doTheShit($dom);
+        $domDocument->loadHTMLFile($real_file);
+
+        doTheShit($domDocument);
     }
 
 
-    function doTheShit($document) {
+    function doTheShit(DomDocument $document) {
 
         $xpath = new DOMXpath($document);
 
@@ -67,26 +70,42 @@
     }
 
 
-    function getTableArray($elements, $withColHeader = FALSE) {
+    function getTableArray(DOMNodeList $resultingDOMNodeList, bool $tableWithColHeader = FALSE): array {
         $resultarray['head'] = [];
         $resultarray['data'] = [];
 
-        if (is_null($elements)) {
+        if (is_null($resultingDOMNodeList)) {
 
             return array();
 
         }
 
-        foreach ($elements as $element) {
+        // iterate the Nodes of the DOMNodeList (https://www.php.net/manual/en/class.domnodelist.php) -> should be one Table
+        foreach ($resultingDOMNodeList as $tableElement) {
 
-            $nodes = $element->childNodes;
+            // $tableElement->tagName is allways 'table'
+            
+            // with the following you can iterate downwards from total tr node count to 1 ($includesTotalTR-$trLoopCount) in the foreach
+            $includesTotalTR = $tableElement->childNodes->length;
+            $trLoopCount = 0;
 
-            foreach ($nodes as $key => $node) {
-                
+            // iterate tr
+            foreach ($tableElement->childNodes as $key => $trElement) {
+
+                // $trElement->tagName is allways 'tr'
+                #echo "<hr /><div style='color:blue;'>TR Count = ".($includesTotalTR-$trLoopCount)."</div><br />";
+                // with the following you can iterate downwards from total tr node count to 1 ($includesTotalChildNodes-$cellLoopCount) in the foreach
+                $includesTotalChildNodes = $trElement->childNodes->length;
+                $cellLoopCount = 0;
+
                 $rowValues = [];
-                $cell_nodes = $node->childNodes;
 
-                foreach ($cell_nodes as $cellKey => $cellNode){
+                foreach ($trElement->childNodes as $cellKey => $cellNode){
+                    
+                    // $cellNode->tagName is sometimes 'td' (every second is an unneeded object)
+                    #echo "<hr /><div style='color:red;'>Cell Count = ".($includesTotalChildNodes-$cellLoopCount)."</div><br />";
+
+                    $cellLoopCount++;
 
                     // I don't know why, but sometimes other objects occurs
                     if (!property_exists($cellNode, 'tagName')){
@@ -106,7 +125,9 @@
                     array_push($rowValues, trim($cellNode->nodeValue));
                 }
 
-                if ($withColHeader && $key == 0){
+                $trLoopCount++;
+
+                if ($tableWithColHeader && $key == 0){
 
                     array_push($resultarray['head'], $rowValues);
                     continue;
@@ -121,16 +142,16 @@
         return $resultarray;
     }
 
-    function getNodeValue($elements) {
+    function getNodeValue(DOMNodeList $resultingDOMNodeList): string {
         $result = "";
 
-        if (is_null($elements)) {  
+        if (is_null($resultingDOMNodeList)) {  
 
             return $result;
 
         }
 
-        foreach ($elements as $element) {
+        foreach ($resultingDOMNodeList as $element) {
 
             $nodes = $element->childNodes;
 
@@ -144,16 +165,16 @@
         return $result;
     }
 
-    function getAttributeValue($elements, $attribute_name) {
+    function getAttributeValue(DOMNodeList $resultingDOMNodeList, string $attribute_name): string {
         $result = "";
 
-        if (is_null($elements)) {
+        if (is_null($resultingDOMNodeList)) {
 
             return $result;
 
         }
 
-        foreach ($elements as $element) {
+        foreach ($resultingDOMNodeList as $element) {
 
             $attributes = $element->attributes;
 

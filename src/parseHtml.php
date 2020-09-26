@@ -1,10 +1,10 @@
 <?php
-
     // turn off php notice messages
     error_reporting(E_ALL & ~E_NOTICE);
+    
+    include 'autoloader.php';
 
     require '../config/AppConfig.php';
-    require './CoronaDataFromHtml.php';
 
     // we don't want the '.' and '..' elements of scandir in our array
     $files = array_diff(scandir(AppConfig::$htmlFileInputPath), array('.', '..'));

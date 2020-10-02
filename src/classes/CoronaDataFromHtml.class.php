@@ -2,11 +2,11 @@
 
     class CoronaDataFromHtml {
 
-        public array $data;
+        public $data;
         
-        private int $unixtimestamp;
-        private DateTime $cet;
-        private DOMxpath $xpath;
+        private $unixtimestamp;
+        private $cet;
+        private $xpath;
 
         function __construct(DomDocument $document) {
 

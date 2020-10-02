@@ -10,7 +10,7 @@ function myAutoLoader($className) {
     $fullPath = $path . $className . $extension;
 
     if (!file_exists($fullPath))
-    return false;
+        return false;
 
     include_once $fullPath;
 }

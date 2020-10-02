@@ -2,7 +2,7 @@
     // turn off php notice messages
     error_reporting(E_ALL & ~E_NOTICE);
     
-    include 'autoloader.php';
+    include './autoloader.php';
 
     require '../config/AppConfig.php';
 

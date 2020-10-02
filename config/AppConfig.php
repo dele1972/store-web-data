@@ -1,6 +1,7 @@
 <?php
     class AppConfig {
         static $htmlFileInputPath = '../samples/';
+        static $htmlFileOutPath = '../processed/';
 
         static $db_host = "localhost";
         static $db_name = "store-web-data";

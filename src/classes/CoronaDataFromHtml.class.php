@@ -12,6 +12,7 @@
 
             $this->xpath = new DOMXpath($document);
             try {
+                $this->data['document'] = $document->saveHTML();
                 $this->data['last-updated'] = $this->getAttributeValue(
                     $this->xpath->query("//article[@class='content-view-full']//time"),
                     'content'
@@ -176,19 +177,21 @@
         }
 
 
-        public function printData() {
+        public function printData(bool $printWithTableDump = TRUE) {
 
             echo "<p>Last Updated: ".$this->data['last-updated']." / " . $this->unixtimestamp ." / " . $this->cet->format('d.m.Y H:i') . "</p>";
             echo "<p>Total infected: ".$this->data['infected-total']."</p>";
             echo "<p>Total recovered: ".$this->data['recovered-total']."</p>";
             echo "<p>Total deceased: ".$this->data['deceased-total']."</p>";
-            echo "<p><pre style='font-size: 0.7em'>";
 
-            print var_dump($this->data['infected-total-distribution-by-age']);
-            print var_dump($this->data['infected-total-distribution-by-sex']);
-            print var_dump($this->data['infected-total-distribution-by-municipalities']);
+            if ($printWithTableDump){
+                echo "<p><pre style='font-size: 0.7em'>";
+                print var_dump($this->data['infected-total-distribution-by-age']);
+                print var_dump($this->data['infected-total-distribution-by-sex']);
+                print var_dump($this->data['infected-total-distribution-by-municipalities']);
+                echo "</pre></p>";
+            }
 
-            echo "</pre></p>";
         }
     }
 ?>

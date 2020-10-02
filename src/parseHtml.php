@@ -8,21 +8,25 @@
 
     // we don't want the '.' and '..' elements of scandir in our array
     $files = array_diff(scandir(AppConfig::$htmlFileInputPath), array('.', '..'));
+    $count_files = count($files);
+    $counter_processed_files = 0;
     
     foreach ($files as $file) {
-        if (!strpos($file, 'extracted') > -1) {
-            continue;
-        }
+        $counter_processed_files++;
+        //if (!strpos($file, 'extracted') > -1) {
+        //    continue;
+        //}
 
-        $real_file = AppConfig::$htmlFileInputPath . $file;
+        $real_input_file = AppConfig::$htmlFileInputPath . $file;
+        $real_output_file = AppConfig::$htmlFileOutPath . $file;
         echo "<hr/>";
-        echo "<h2>$real_file</h2>";
+        echo "<h2>[$counter_processed_files / $count_files] $real_input_file</h2>";
         $domDocument = new DomDocument();
 
         // we don't want to see warnings about invalid tags in the DomDocument
         libxml_use_internal_errors(true);
 
-        $domDocument->loadHTMLFile($real_file);
+        $domDocument->loadHTMLFile($real_input_file);
 
         try {
             $coronaData = new CoronaDataFromHtml($domDocument);
@@ -41,10 +45,13 @@
         }
         echo "<div>get_class: " . get_class($coronaData) . "</div>";
 
-        $coronaData->printData();
-        #print(var_dump($coronaData));
-        
-        echo "<hr />";
+        $coronaData->printData(FALSE);
+
+        // move file
+        //if (is_resource($real_input_file))
+        //    fclose($real_input_file);
+        //sleep(1);    // this does the trick
+        //rename($real_input_file, $real_input_file . "processed.html");
     }
 
 ?>

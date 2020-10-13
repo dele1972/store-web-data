@@ -5,17 +5,17 @@
     include './autoloader.php';
 
     require '../config/AppConfig.php';
+    //require '../../.data-nogit/store-web-data/AppConfig.php';
 
     // we don't want the '.' and '..' elements of scandir in our array
     $files = array_diff(scandir(AppConfig::$htmlFileInputPath), array('.', '..'));
     $count_files = count($files);
     $counter_processed_files = 0;
+
+    $obj = new Model();
     
     foreach ($files as $file) {
         $counter_processed_files++;
-        //if (!strpos($file, 'extracted') > -1) {
-        //    continue;
-        //}
 
         $real_input_file = AppConfig::$htmlFileInputPath . $file;
         $real_output_file = AppConfig::$htmlFileOutPath . $file;
@@ -30,12 +30,12 @@
 
         try {
             $coronaData = new CoronaDataFromHtml($domDocument);
-            #$coronaData = new CoronaDataFromHtml(new stdClass());
+            #$coronaData = new CoronaDataFromHtml(new stdClass());  // for testing an empty object parameter
         } catch (TypeError $e) {
-            // logging?
+            // logging? move file to processed/failed/nodom?
             //    Constructor Parameter Type is not a DomDocument Object
         } catch (Exception $e) {
-            // logging?
+            // logging? move file to processed/failed/novalidxpath?
             //    Constructor has got xpath Problems
         }
 
@@ -45,13 +45,18 @@
         }
         echo "<div>get_class: " . get_class($coronaData) . "</div>";
 
-        $coronaData->printData(FALSE);
+        //$coronaData->printData(FALSE);
 
-        // move file
-        //if (is_resource($real_input_file))
-        //    fclose($real_input_file);
-        //sleep(1);    // this does the trick
-        //rename($real_input_file, $real_input_file . "processed.html");
+        try {
+            $obj->storeData($coronaData);
+
+        } catch (Exception $e) {
+            print "Error: " . $e->getMessage();
+            print "Code: " . $e->getCode();
+        }
+
+        // move file (is working but disabled)
+        // rename($real_input_file, $real_output_file);
     }
 
 ?>

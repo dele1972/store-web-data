@@ -4,7 +4,8 @@ store captured data to my db
 
 ## ToDo's
 
-- scan folder
+- scan folder --> OK
+  - set config as 'global' (class)
   - if update date not in DB
     - ... store data in DB 
   - everytime - archive both files
@@ -14,6 +15,13 @@ store captured data to my db
 - simplify
 - tests
 
+## information
+
+- rename/move needs 764 on samples and processed
+- config/AppConfig.php should only be used as a template
+  - copy that to another folder (outside of document root)
+  - include that 
+- max. people count of region hanover: 1.178.781 ([07/2019](https://www.hannover.de/Leben-in-der-Region-Hannover/Verwaltungen-Kommunen/Die-Verwaltung-der-Region-Hannover/Region-Hannover/Weitere-Meldungen-der-Region-Hannover/2019/Neue-Bev%C3%B6lkerungszahlen))
 
 ## By using XAMPP for local development
 

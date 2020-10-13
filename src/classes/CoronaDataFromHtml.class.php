@@ -183,6 +183,7 @@
             echo "<p>Total infected: ".$this->data['infected-total']."</p>";
             echo "<p>Total recovered: ".$this->data['recovered-total']."</p>";
             echo "<p>Total deceased: ".$this->data['deceased-total']."</p>";
+            echo "<p>Document size: ".strlen($this->data['document'])."</p>";
 
             if ($printWithTableDump){
                 echo "<p><pre style='font-size: 0.7em'>";

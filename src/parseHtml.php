@@ -4,15 +4,40 @@
     
     include './autoloader.php';
 
-    require '../config/AppConfig.php';
-    //require '../../.data-nogit/store-web-data/AppConfig.php';
+    include './configloader.php';
 
     // we don't want the '.' and '..' elements of scandir in our array
     $files = array_diff(scandir(AppConfig::$htmlFileInputPath), array('.', '..'));
     $count_files = count($files);
     $counter_processed_files = 0;
 
-    $obj = new Model();
+    $database_data['host'] = AppConfig::$db_host;
+    $database_data['name'] = AppConfig::$db_name;
+    $database_data['user'] = AppConfig::$db_user;
+    $database_data['password'] = AppConfig::$db_password;
+    $database_data['collation'] = AppConfig::$db_collation;
+
+
+    try {
+
+        $obj = new Model($database_data);
+
+    } catch (Exception $e) {
+
+        print "Problems with the database prevent execution.<br/>";
+
+        /*
+        Code 2002   -> couldn't establish db connection - 
+        Code 1049   -> Unknown database 
+        Code 1044   -> DB Access denied or db user unknown
+        Code 1045   -> DB Access denied - wrong password
+        */
+        // print "<br />Error: " . $e->getMessage();
+        // print "<br />Code: " . $e->getCode();
+
+        return;
+
+    }
     
     foreach ($files as $file) {
         $counter_processed_files++;
@@ -43,20 +68,35 @@
             echo "<div>Could not parse Data for this document!</div>";
             continue;
         }
-        echo "<div>get_class: " . get_class($coronaData) . "</div>";
+        // echo "<div>get_class: " . get_class($coronaData) . "</div>";
 
-        //$coronaData->printData(FALSE);
+        //$coronaData->printData(TRUE);
 
+        // store data to database and move the file
         try {
+
             $obj->storeData($coronaData);
+            // @ToDo: move file to processed
+            // move file (is working but disabled)
+            // rename($real_input_file, $real_output_file);
 
         } catch (Exception $e) {
-            print "Error: " . $e->getMessage();
-            print "Code: " . $e->getCode();
+            
+            /*
+            Code 1064   -> You have an error in your SQL syntax
+            Code 1062   -> Duplicate entry for key 'lastupdated_tmstmp'
+            */
+
+            echo "<br />DB INSERT ERROR.";
+            print "<br />Error: " . $e->getMessage();
+            print "<br />Code: " . $e->getCode();
+
+            // @ToDo: move file to processed/duplicates
+            // move file (is working but disabled)
+            // rename($real_input_file, $real_output_file);
+
         }
 
-        // move file (is working but disabled)
-        // rename($real_input_file, $real_output_file);
     }
 
 ?>

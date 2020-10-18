@@ -1,5 +1,8 @@
 <?php
     class AppConfig {
+        
+        protected static $_instance = null;
+        
         static $htmlFileInputPath = '../samples/';
         static $htmlFileOutPath = '../processed/';
 
@@ -8,5 +11,25 @@
         static $db_user = "root";
         static $db_password = "";
         static $db_collation = "utf8mb4_unicode_ci";
+        
+        
+        public static function getInstance() {
+            print "GET INSTANCE";
+            if (null === self::$_instance)
+            {
+                self::$_instance = new self;
+            }
+            return self::$_instance;
+        }
+        
+        
+        protected function __clone() {}
+   
+        /**
+         * constructor
+         *
+         * externe Instanzierung verbieten
+         */
+        protected function __construct() {}
     }
 ?>

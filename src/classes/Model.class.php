@@ -22,20 +22,26 @@
         
         private $unixtimestamp;
         private $pdo;
-        const DB_HOST = "localhost";
-        const DB_NAME = "store-web-data";
-        const DB_USER = "root";
-        const DB_PASSWORD = "";
-        const DB_COLLATION = "utf8mb4_unicode_ci";
+        private $last_mainentry_id;
 
 
-        function __construct() {
+        function __construct($databaseCred) {
 
-            $conStr = sprintf("mysql:host=%s;dbname=%s", self::DB_HOST, self::DB_NAME);
+            
+
+            // const DB_HOST = "localhost";
+            // const DB_NAME = "store-web-data";
+            // const DB_USER = "root";
+            // const DB_PASSWORD = "";
+            // const DB_COLLATION = "utf8mb4_unicode_ci";
+    
+            // print var_dump($databaseCred);
+
+            $conStr = sprintf("mysql:host=%s;dbname=%s", $databaseCred['host'], $databaseCred['name']);
 
             try {
 
-                $this->pdo = new PDO($conStr, self::DB_USER, self::DB_PASSWORD);
+                $this->pdo = new PDO($conStr, $databaseCred['user'], $databaseCred['password']);
                 // we need to disable the pdo silent mode to be able to react on errors (https://stackoverflow.com/a/32648423)
                 $this->pdo->setAttribute( PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION );
                 
@@ -47,12 +53,10 @@
                 $this->createDistributionMunicipalitiesTable();
 
             } catch (PDOException $e) {
-                
-                echo $e->getMessage();
-                
-                throw new Exception("PDO Exception");
-                // @ToDo: do a log if a query could not find the xpath in the document - e.g.:
-                //        Argument 1 passed to CoronaDataFromHtml::getNodeValue() must be an instance of DOMNodeList, bool given, called in /home/lederich/dev/web/domains/lederich.de/htdocs/store-web-data/src/CoronaDataFromHtml.php on line 28
+
+                // PDO Connection Problems
+                throw new Exception($e->getMessage(), $e->getCode());
+
             }
 
         }
@@ -104,12 +108,12 @@
                     entry_id        INT NOT NULL,
                     x_to_9          MEDIUMINT UNSIGNED DEFAULT NULL,
                     10_to_19        MEDIUMINT UNSIGNED DEFAULT NULL,
-                    20_to_19        MEDIUMINT UNSIGNED DEFAULT NULL,
-                    30_to_19        MEDIUMINT UNSIGNED DEFAULT NULL,
-                    40_to_19        MEDIUMINT UNSIGNED DEFAULT NULL,
-                    50_to_19        MEDIUMINT UNSIGNED DEFAULT NULL,
-                    60_to_19        MEDIUMINT UNSIGNED DEFAULT NULL,
-                    70_to_19        MEDIUMINT UNSIGNED DEFAULT NULL,
+                    20_to_29        MEDIUMINT UNSIGNED DEFAULT NULL,
+                    30_to_39        MEDIUMINT UNSIGNED DEFAULT NULL,
+                    40_to_49        MEDIUMINT UNSIGNED DEFAULT NULL,
+                    50_to_59        MEDIUMINT UNSIGNED DEFAULT NULL,
+                    60_to_69        MEDIUMINT UNSIGNED DEFAULT NULL,
+                    70_to_79        MEDIUMINT UNSIGNED DEFAULT NULL,
                     80_to_x         MEDIUMINT UNSIGNED DEFAULT NULL,
                     not_specified   MEDIUMINT UNSIGNED DEFAULT NULL
                 );
@@ -135,7 +139,7 @@
         private function createDistributionMunicipalitiesTable() {
             $sql = <<<EOSQL
                 CREATE TABLE IF NOT EXISTS distribution_municipalities (
-                    dist_sex_id                             INT AUTO_INCREMENT PRIMARY KEY,
+                    dist_municapilities_id                             INT AUTO_INCREMENT PRIMARY KEY,
                     entry_id                                INT NOT NULL,
                     Barsinghausen_current                   MEDIUMINT UNSIGNED DEFAULT NULL,
                     Barsinghausen_sincebegin                MEDIUMINT UNSIGNED DEFAULT NULL,
@@ -184,23 +188,12 @@
             return $this->pdo->exec($sql);
         }
 
-        
-        private function privateDummy(DOMNodeList $resultingDOMNodeList, bool $tableWithColHeader = FALSE): array {
-
-            return [];
-
-        }
-
-
-        public function publicDummy(bool $printWithTableDump = TRUE) {
-
-            echo "<p>Model</p>";
-
-        }
-
-
 
         private function insertMainData(CoronaDataFromHtml $dataObject) {
+
+            $unixtimestamp = strtotime($dataObject->data['last-updated']);
+            $cet = new DateTime(date_create_from_format('U',$unixtimestamp,new DateTimeZone('CET'))->format('d.m.Y H:i'));
+
             $stmt = $this->pdo->prepare("
                 INSERT INTO maindata (
                     lastupdated_tmstmp,
@@ -218,34 +211,239 @@
                     )
                 ;
             ");
-            
-            $unixtimestamp = strtotime($dataObject->data['last-updated']);
-            $cet = new DateTime(date_create_from_format('U',$unixtimestamp,new DateTimeZone('CET'))->format('d.m.Y H:i'));
-            
+
             try {
-                print $stmt->execute([
+
+                $stmt->execute([
                     ':lastupdated_tmstmp' => $unixtimestamp,
                     ':lastupdated_string' => $dataObject->data['last-updated'],
                     ':total_infected' => $dataObject->data['infected-total'],
                     ':total_recovered' => $dataObject->data['recovered-total'],
                     ':total_deceased' => $dataObject->data['deceased-total']
                 ]);
+
+                $this->last_mainentry_id = $this->pdo->lastInsertId();
+
             } catch (PDOException $e) {
-                // print "<h2>PDO Exception ".$e->getCode()." --- ". $this->pdo->errorCode() . "</h2>";
-                // 23000 sql state failure on insert
-                // 1062 error, duplicate entry
-                // print_r ("Error: " . $stmt->errorInfo()[1] . "<br />");
-                // print_r ("Message: " . $stmt->errorInfo()[2] . "<br />");
-                
-                // @ToDo: throw an error for the main calling instance of this model class
+
                 throw new Exception($stmt->errorInfo()[2], $stmt->errorInfo()[1]);
 
-            } catch (Exception $e) {
-                // print "<h2>Exception</h2>";
-                // print var_dump($e);
-            } catch (Error $e) {
-                // print "<h2>Error</h2>";
-                // print var_dump($e);
+            }
+
+            return TRUE;
+
+        }
+
+
+        private function insertDistributionAgeData(CoronaDataFromHtml $dataObject) {
+
+            $stmt = $this->pdo->prepare("
+                INSERT INTO distribution_age (
+                    entry_id,
+                    x_to_9,
+                    10_to_19,
+                    20_to_29,
+                    30_to_39,
+                    40_to_49,
+                    50_to_59,
+                    60_to_69,
+                    70_to_79,
+                    80_to_x,
+                    not_specified
+                )
+                    VALUES (
+                        :entry_id,
+                        :x_to_9,
+                        :10_to_19,
+                        :20_to_29,
+                        :30_to_39,
+                        :40_to_49,
+                        :50_to_59,
+                        :60_to_69,
+                        :70_to_79,
+                        :80_to_x,
+                        :not_specified
+                    )
+                ;
+            ");
+
+            try {
+
+                // @ToDo make bind statements in a loop and then an empty execute
+                $stmt->execute([
+                    ':entry_id' => $this->last_mainentry_id,
+                    ':x_to_9'   => $dataObject->data['infected-total-distribution-by-age']['data'][0][1],
+                    ':10_to_19' => $dataObject->data['infected-total-distribution-by-age']['data'][1][1],
+                    ':20_to_29' => $dataObject->data['infected-total-distribution-by-age']['data'][2][1],
+                    ':30_to_39' => $dataObject->data['infected-total-distribution-by-age']['data'][3][1],
+                    ':40_to_49' => $dataObject->data['infected-total-distribution-by-age']['data'][4][1],
+                    ':50_to_59' => $dataObject->data['infected-total-distribution-by-age']['data'][5][1],
+                    ':60_to_69' => $dataObject->data['infected-total-distribution-by-age']['data'][6][1],
+                    ':70_to_79' => $dataObject->data['infected-total-distribution-by-age']['data'][7][1],
+                    ':80_to_x'  => $dataObject->data['infected-total-distribution-by-age']['data'][8][1],
+                    ':not_specified' => $dataObject->data['infected-total-distribution-by-age']['data'][9][1]
+                ]);
+
+            } catch (PDOException $e) {
+
+                throw new Exception($stmt->errorInfo()[2], $stmt->errorInfo()[1]);
+
+            }
+
+            return TRUE;
+
+        }
+
+
+        private function insertDistributionMunicipalitiesData(CoronaDataFromHtml $dataObject) {
+
+            $stmt = $this->pdo->prepare("
+                INSERT INTO distribution_municipalities (
+                    entry_id,
+                    Barsinghausen_current,
+                    Barsinghausen_sincebegin,
+                    Burgdorf_current,
+                    Burgdorf_sincebegin,
+                    Burgwedel_current,
+                    Burgwedel_sincebegin,
+                    Garbsen_current,
+                    Garbsen_sincebegin,
+                    Gehrden_current,
+                    Gehrden_sincebegin,
+                    Hemmingen_current,
+                    Hemmingen_sincebegin,
+                    Isernhagen_current,
+                    Isernhagen_sincebegin,
+                    Laatzen_current,
+                    Laatzen_sincebegin,
+                    Landeshauptstadt_Hannover_current,
+                    Landeshauptstadt_Hannover_sincebegin,
+                    Langenhagen_current,
+                    Langenhagen_sincebegin,
+                    Lehrte_current,
+                    Lehrte_sincebegin,
+                    Neustadt_a_Rbge_current,
+                    Neustadt_a_Rbge_sincebegin,
+                    Pattensen_current,
+                    Pattensen_sincebegin,
+                    Ronnenberg_current,
+                    Ronnenberg_sincebegin,
+                    Seelze_current,
+                    Seelze_sincebegin,
+                    Sehnde_current,
+                    Sehnde_sincebegin,
+                    Springe_current,
+                    Springe_sincebegin,
+                    Uetze_current,
+                    Uetze_sincebegin,
+                    Wedemark_current,
+                    Wedemark_sincebegin,
+                    Wennigsen_current,
+                    Wennigsen_sincebegin,
+                    Wunstorf_current,
+                    Wunstorf_sincebegin
+                )
+                    VALUES (
+                        :entry_id,
+                        :Barsinghausen_current,
+                        :Barsinghausen_sincebegin,
+                        :Burgdorf_current,
+                        :Burgdorf_sincebegin,
+                        :Burgwedel_current,
+                        :Burgwedel_sincebegin,
+                        :Garbsen_current,
+                        :Garbsen_sincebegin,
+                        :Gehrden_current,
+                        :Gehrden_sincebegin,
+                        :Hemmingen_current,
+                        :Hemmingen_sincebegin,
+                        :Isernhagen_current,
+                        :Isernhagen_sincebegin,
+                        :Laatzen_current,
+                        :Laatzen_sincebegin,
+                        :Landeshauptstadt_Hannover_current,
+                        :Landeshauptstadt_Hannover_sincebegin,
+                        :Langenhagen_current,
+                        :Langenhagen_sincebegin,
+                        :Lehrte_current,
+                        :Lehrte_sincebegin,
+                        :Neustadt_a_Rbge_current,
+                        :Neustadt_a_Rbge_sincebegin,
+                        :Pattensen_current,
+                        :Pattensen_sincebegin,
+                        :Ronnenberg_current,
+                        :Ronnenberg_sincebegin,
+                        :Seelze_current,
+                        :Seelze_sincebegin,
+                        :Sehnde_current,
+                        :Sehnde_sincebegin,
+                        :Springe_current,
+                        :Springe_sincebegin,
+                        :Uetze_current,
+                        :Uetze_sincebegin,
+                        :Wedemark_current,
+                        :Wedemark_sincebegin,
+                        :Wennigsen_current,
+                        :Wennigsen_sincebegin,
+                        :Wunstorf_current,
+                        :Wunstorf_sincebegin
+                    )
+                ;
+            ");
+
+            try {
+
+                // @ToDo make bind statements in a loop and then an empty execute
+                $stmt->execute([
+                    ':entry_id' => $this->last_mainentry_id,
+                    ':Barsinghausen_current' => $dataObject->data['infected-total-distribution-by-municipalities']['data'][0][1],
+                    ':Barsinghausen_sincebegin' => $dataObject->data['infected-total-distribution-by-municipalities']['data'][0][2],
+                    ':Burgdorf_current' => $dataObject->data['infected-total-distribution-by-municipalities']['data'][1][1],
+                    ':Burgdorf_sincebegin' => $dataObject->data['infected-total-distribution-by-municipalities']['data'][1][2],
+                    ':Burgwedel_current' => $dataObject->data['infected-total-distribution-by-municipalities']['data'][2][1],
+                    ':Burgwedel_sincebegin' => $dataObject->data['infected-total-distribution-by-municipalities']['data'][2][2],
+                    ':Garbsen_current' => $dataObject->data['infected-total-distribution-by-municipalities']['data'][3][1],
+                    ':Garbsen_sincebegin' => $dataObject->data['infected-total-distribution-by-municipalities']['data'][3][2],
+                    ':Gehrden_current' => $dataObject->data['infected-total-distribution-by-municipalities']['data'][4][1],
+                    ':Gehrden_sincebegin' => $dataObject->data['infected-total-distribution-by-municipalities']['data'][4][2],
+                    ':Hemmingen_current' => $dataObject->data['infected-total-distribution-by-municipalities']['data'][5][1],
+                    ':Hemmingen_sincebegin' => $dataObject->data['infected-total-distribution-by-municipalities']['data'][5][2],
+                    ':Isernhagen_current' => $dataObject->data['infected-total-distribution-by-municipalities']['data'][6][1],
+                    ':Isernhagen_sincebegin' => $dataObject->data['infected-total-distribution-by-municipalities']['data'][6][2],
+                    ':Laatzen_current' => $dataObject->data['infected-total-distribution-by-municipalities']['data'][7][1],
+                    ':Laatzen_sincebegin' => $dataObject->data['infected-total-distribution-by-municipalities']['data'][7][2],
+                    ':Landeshauptstadt_Hannover_current' => $dataObject->data['infected-total-distribution-by-municipalities']['data'][8][1],
+                    ':Landeshauptstadt_Hannover_sincebegin' => $dataObject->data['infected-total-distribution-by-municipalities']['data'][8][2],
+                    ':Langenhagen_current' => $dataObject->data['infected-total-distribution-by-municipalities']['data'][9][1],
+                    ':Langenhagen_sincebegin' => $dataObject->data['infected-total-distribution-by-municipalities']['data'][9][2],
+                    ':Lehrte_current' => $dataObject->data['infected-total-distribution-by-municipalities']['data'][10][1],
+                    ':Lehrte_sincebegin' => $dataObject->data['infected-total-distribution-by-municipalities']['data'][10][2],
+                    ':Neustadt_a_Rbge_current' => $dataObject->data['infected-total-distribution-by-municipalities']['data'][11][1],
+                    ':Neustadt_a_Rbge_sincebegin' => $dataObject->data['infected-total-distribution-by-municipalities']['data'][1][2],
+                    ':Pattensen_current' => $dataObject->data['infected-total-distribution-by-municipalities']['data'][12][1],
+                    ':Pattensen_sincebegin' => $dataObject->data['infected-total-distribution-by-municipalities']['data'][12][2],
+                    ':Ronnenberg_current' => $dataObject->data['infected-total-distribution-by-municipalities']['data'][13][1],
+                    ':Ronnenberg_sincebegin' => $dataObject->data['infected-total-distribution-by-municipalities']['data'][13][2],
+                    ':Seelze_current' => $dataObject->data['infected-total-distribution-by-municipalities']['data'][14][1],
+                    ':Seelze_sincebegin' => $dataObject->data['infected-total-distribution-by-municipalities']['data'][14][2],
+                    ':Sehnde_current' => $dataObject->data['infected-total-distribution-by-municipalities']['data'][15][1],
+                    ':Sehnde_sincebegin' => $dataObject->data['infected-total-distribution-by-municipalities']['data'][15][2],
+                    ':Springe_current' => $dataObject->data['infected-total-distribution-by-municipalities']['data'][16][1],
+                    ':Springe_sincebegin' => $dataObject->data['infected-total-distribution-by-municipalities']['data'][16][2],
+                    ':Uetze_current' => $dataObject->data['infected-total-distribution-by-municipalities']['data'][17][1],
+                    ':Uetze_sincebegin' => $dataObject->data['infected-total-distribution-by-municipalities']['data'][17][2],
+                    ':Wedemark_current' => $dataObject->data['infected-total-distribution-by-municipalities']['data'][18][1],
+                    ':Wedemark_sincebegin' => $dataObject->data['infected-total-distribution-by-municipalities']['data'][18][2],
+                    ':Wennigsen_current' => $dataObject->data['infected-total-distribution-by-municipalities']['data'][19][1],
+                    ':Wennigsen_sincebegin' => $dataObject->data['infected-total-distribution-by-municipalities']['data'][19][2],
+                    ':Wunstorf_current' => $dataObject->data['infected-total-distribution-by-municipalities']['data'][20][1],
+                    ':Wunstorf_sincebegin' => $dataObject->data['infected-total-distribution-by-municipalities']['data'][20][2]
+            ]);
+
+            } catch (PDOException $e) {
+
+                throw new Exception($stmt->errorInfo()[2], $stmt->errorInfo()[1]);
+
             }
 
             return TRUE;
@@ -258,6 +456,10 @@
             try {
 
                 $this->insertMainData($dataObject);
+                $this->insertDistributionAgeData($dataObject);
+                $this->insertDistributionMunicipalitiesData($dataObject);
+                //distribution_sex
+                //document
 
             } catch (Exception $e) {
 

@@ -12,7 +12,14 @@
 
             $this->xpath = new DOMXpath($document);
             try {
+                // @ToDo: encoding of the saved html sting is wrong!
+                //$document->encoding='UTF-8';
                 $this->data['document'] = $document->saveHTML();
+                // if( !strpos( $this->data['document'], "charset=UTF-8" ) !== false) {
+                //    echo "\"bar\" exists in the haystack variable";
+                //    $this->data['document'] = str_replace("</title>","</title><meta http-equiv='Content-type' content='text/html;charset=UTF-8' />", $this->data['document']);
+                //}
+                
                 $this->data['last-updated'] = $this->getAttributeValue(
                     $this->xpath->query("//article[@class='content-view-full']//time"),
                     'content'

@@ -127,9 +127,9 @@
                 CREATE TABLE IF NOT EXISTS distribution_sex (
                     dist_sex_id     INT AUTO_INCREMENT PRIMARY KEY,
                     entry_id        INT NOT NULL,
-                    male            MEDIUMINT UNSIGNED DEFAULT NULL,
-                    female          MEDIUMINT UNSIGNED DEFAULT NULL,
-                    not_specified   MEDIUMINT UNSIGNED DEFAULT NULL
+                    male            DOUBLE(4, 1) DEFAULT NULL,
+                    female          DOUBLE(4, 1) DEFAULT NULL,
+                    not_specified   DOUBLE(4, 1) DEFAULT NULL
                 );
                 EOSQL;
             return $this->pdo->exec($sql);
@@ -451,6 +451,91 @@
         }
 
 
+        private function insertDistributionSexData(CoronaDataFromHtml $dataObject) {
+
+            $stmt = $this->pdo->prepare("
+                INSERT INTO distribution_sex (
+                    entry_id,
+                    male,
+                    female,
+                    not_specified
+                )
+                    VALUES (
+                        :entry_id,
+                        :male,
+                        :female,
+                        :not_specified
+                        )
+                ;
+            ");
+
+            try {
+
+                // @ToDo make bind statements in a loop and then an empty execute
+                $stmt->execute([
+                    ':entry_id' => $this->last_mainentry_id,
+                    ':male'   => (float) str_replace(" Prozent","", $dataObject->data['infected-total-distribution-by-sex']['data'][0][1]),
+                    ':female'   => (float) str_replace(" Prozent","", $dataObject->data['infected-total-distribution-by-sex']['data'][1][1]),
+                    ':not_specified'   => (float) str_replace(" Prozent","", $dataObject->data['infected-total-distribution-by-sex']['data'][2][1])
+                ]);
+
+            } catch (PDOException $e) {
+
+                throw new Exception($stmt->errorInfo()[2], $stmt->errorInfo()[1]);
+
+            }
+
+            return TRUE;
+
+        }
+
+
+        private function insertDocumentData(CoronaDataFromHtml $dataObject) {
+
+            $stmt = $this->pdo->prepare("
+                INSERT INTO document (
+                    entry_id,
+                    document,
+                    array_age,
+                    array_sex,
+                    array_municipalities
+                )
+                    VALUES (
+                        :entry_id,
+                        :document,
+                        :array_age,
+                        :array_sex,
+                        :array_municipalities
+                            )
+                ;
+            ");
+
+            try {
+
+                // @ToDo make bind statements in a loop and then an empty execute
+
+                // @ToDo: encoding of document is wrong
+                print $dataObject->data['document'];
+                $stmt->execute([
+                    ':entry_id' => $this->last_mainentry_id,
+                    ':document' => $dataObject->data['document'],
+                    ':array_age' => json_encode($dataObject->data['infected-total-distribution-by-age']),
+                    ':array_sex' => json_encode($dataObject->data['infected-total-distribution-by-sex']),
+                    ':array_municipalities' => json_encode($dataObject->data['infected-total-distribution-by-municipalities'])
+                ]);
+
+            } catch (PDOException $e) {
+
+                //print var_dump($e);
+                throw new Exception($stmt->errorInfo()[2], $stmt->errorInfo()[1]);
+
+            }
+
+            return TRUE;
+
+        }
+
+
         public function storeData(CoronaDataFromHtml $dataObject) {
 
             try {
@@ -458,8 +543,8 @@
                 $this->insertMainData($dataObject);
                 $this->insertDistributionAgeData($dataObject);
                 $this->insertDistributionMunicipalitiesData($dataObject);
-                //distribution_sex
-                //document
+                $this->insertDistributionSexData($dataObject);
+                $this->insertDocumentData($dataObject);
 
             } catch (Exception $e) {
 

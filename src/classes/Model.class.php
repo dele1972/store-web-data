@@ -27,23 +27,17 @@
 
         function __construct($databaseCred) {
 
-            
-
-            // const DB_HOST = "localhost";
-            // const DB_NAME = "store-web-data";
-            // const DB_USER = "root";
-            // const DB_PASSWORD = "";
-            // const DB_COLLATION = "utf8mb4_unicode_ci";
-    
             // print var_dump($databaseCred);
 
-            $conStr = sprintf("mysql:host=%s;dbname=%s", $databaseCred['host'], $databaseCred['name']);
+            $conStr = sprintf("mysql:host=%s;dbname=%s;", $databaseCred['host'], $databaseCred['name']);
 
             try {
 
                 $this->pdo = new PDO($conStr, $databaseCred['user'], $databaseCred['password']);
                 // we need to disable the pdo silent mode to be able to react on errors (https://stackoverflow.com/a/32648423)
-                $this->pdo->setAttribute( PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION );
+                $this->pdo->setAttribute( PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+                // $this->pdo->exec("SET NAMES utf8mb4");
+                $this->pdo->exec("SET CHARACTER SET utf8mb4");
                 
                 // create Tables if not exists
                 $this->createMainDataTable();
@@ -515,7 +509,7 @@
                 // @ToDo make bind statements in a loop and then an empty execute
 
                 // @ToDo: encoding of document is wrong
-                print $dataObject->data['document'];
+                // print $dataObject->data['document'];
                 $stmt->execute([
                     ':entry_id' => $this->last_mainentry_id,
                     ':document' => $dataObject->data['document'],

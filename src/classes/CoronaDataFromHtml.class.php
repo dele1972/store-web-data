@@ -11,14 +11,9 @@
         function __construct(DomDocument $document) {
 
             $this->xpath = new DOMXpath($document);
+            
             try {
-                // @ToDo: encoding of the saved html sting is wrong!
-                //$document->encoding='UTF-8';
                 $this->data['document'] = $document->saveHTML();
-                // if( !strpos( $this->data['document'], "charset=UTF-8" ) !== false) {
-                //    echo "\"bar\" exists in the haystack variable";
-                //    $this->data['document'] = str_replace("</title>","</title><meta http-equiv='Content-type' content='text/html;charset=UTF-8' />", $this->data['document']);
-                //}
                 
                 $this->data['last-updated'] = $this->getAttributeValue(
                     $this->xpath->query("//article[@class='content-view-full']//time"),
@@ -27,9 +22,11 @@
                 $this->data['infected-total'] = $this->getNodeValue(
                     $this->xpath->query("//article[@class='content-view-full']/div/div[1]/div[2]/div[2]/p[1]/b[1]")
                 );
+                // @ToDo: !!! sometimes an information about the increase count is inserted and then this xpath don't work!
                 $this->data['recovered-total'] = $this->getNodeValue(
                     $this->xpath->query("//article[@class='content-view-full']/div/div[1]/div[2]/div[2]/p[1]/b[2]")
                 );
+                // @ToDo: !!! sometimes an information about the increase count is inserted and then this xpath don't work!
                 $this->data['deceased-total'] = $this->getNodeValue(
                     $this->xpath->query("//article[@class='content-view-full']/div/div[1]/div[2]/div[2]/p[1]/b[3]")
                 );
@@ -190,7 +187,7 @@
             echo "<p>Total infected: ".$this->data['infected-total']."</p>";
             echo "<p>Total recovered: ".$this->data['recovered-total']."</p>";
             echo "<p>Total deceased: ".$this->data['deceased-total']."</p>";
-            echo "<p>Document size: ".strlen($this->data['document'])."</p>";
+            // echo "<p>Document size: ".strlen($this->data['document'])."</p>";
 
             if ($printWithTableDump){
                 echo "<p><pre style='font-size: 0.7em'>";

@@ -6,6 +6,21 @@
 
     include './configloader.php';
 
+
+    echo <<<END
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta http-equiv="x-ua-compatible" content="ie=edge" />
+        <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+        <title>Template</title>
+        <link rel='stylesheet' type='text/css' href='https://lederich.de/global-styles/normalize.css'>
+        <link rel='stylesheet' type='text/css' href='https://lederich.de/global-styles/boilerplate-8.0.0.css'>
+        <link rel='stylesheet' type='text/css' href='https://lederich.de/styles/global.css'>
+    </head>
+    <body>
+    END;
     // we don't want the '.' and '..' elements of scandir in our array
     $files = array_diff(scandir(AppConfig::$htmlFileInputPath), array('.', '..'));
     $count_files = count($files);
@@ -46,16 +61,14 @@
         $real_output_file = AppConfig::$htmlFileOutPath . $file;
         echo "<hr/>";
         echo "<h2>[$counter_processed_files / $count_files] $real_input_file</h2>";
-        $domDocument = new DomDocument();
 
-        // we don't want to see warnings about invalid tags in the DomDocument
-        libxml_use_internal_errors(true);
-
-        $domDocument->loadHTMLFile($real_input_file);
+        $domDocument = getDomDocument($real_input_file);
 
         try {
+            
             $coronaData = new CoronaDataFromHtml($domDocument);
             #$coronaData = new CoronaDataFromHtml(new stdClass());  // for testing an empty object parameter
+        
         } catch (TypeError $e) {
             // logging? move file to processed/failed/nodom?
             //    Constructor Parameter Type is not a DomDocument Object
@@ -65,12 +78,14 @@
         }
 
         if (!is_object($coronaData)){
+
             echo "<div>Could not parse Data for this document!</div>";
             continue;
-        }
-        // echo "<div>get_class: " . get_class($coronaData) . "</div>";
 
-        //$coronaData->printData(TRUE);
+        }
+        
+        // @ToDo - this debug output is important to get the wrong recovered and deceased count!
+        // $coronaData->printData(FALSE);
 
         // store data to database and move the file
         try {
@@ -96,6 +111,36 @@
             // rename($real_input_file, $real_output_file);
 
         }
+
+    }
+
+    echo <<<END
+    </body>
+    </html>
+    END;
+
+    function getDomDocument(string $htmlSourceFileName):DomDocument {
+
+        $htmlContent = file_get_contents($htmlSourceFileName);
+
+        $document = new DomDocument();
+
+        // we don't want to see warnings about invalid tags in the DomDocument
+        libxml_use_internal_errors(true);
+
+        // UTF-8 WAS NOT SET and will be fixed
+        if( !strpos( $htmlContent, "charset=UTF-8" ) !== false) {
+
+            echo "UTF-8 WAS NOT SET and will be fixed";
+            $document->loadHTML('<?xml version="1.0" encoding="UTF-8"?>' . $htmlContent);
+            return $document;
+
+        }
+
+        // UTF-8 was set correctly, only regular loading is neccessary
+        echo "UTF-8 was set correctly, only regular loading is neccessary";
+        $document->loadHTML($htmlContent);
+        return $document;
 
     }
 

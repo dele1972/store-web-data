@@ -5,6 +5,8 @@
         
         static $htmlFileInputPath = '../samples/';
         static $htmlFileOutPath = '../processed/';
+        static $htmlFileOutDuplicatePath = '../processed/duplicate/';
+        static $htmlFileOutErrorPath = '../processed/error/';
 
         static $db_host = "localhost";
         static $db_name = "store-web-data";

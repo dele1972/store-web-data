@@ -14,7 +14,7 @@
         <meta charset="UTF-8">
         <meta http-equiv="x-ua-compatible" content="ie=edge" />
         <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
-        <title>Template</title>
+        <title>parse HTML to my DB</title>
         <link rel='stylesheet' type='text/css' href='https://lederich.de/global-styles/normalize.css'>
         <link rel='stylesheet' type='text/css' href='https://lederich.de/global-styles/boilerplate-8.0.0.css'>
         <link rel='stylesheet' type='text/css' href='https://lederich.de/styles/global.css'>
@@ -25,6 +25,13 @@
     $files = array_diff(scandir(AppConfig::$htmlFileInputPath), array('.', '..'));
     $count_files = count($files);
     $counter_processed_files = 0;
+
+    if ($count_files === 0) {
+
+        print "<h1> No files for processing found</h1></body></html>";
+        return;
+
+    }
 
     $database_data['host'] = AppConfig::$db_host;
     $database_data['name'] = AppConfig::$db_name;
@@ -40,7 +47,7 @@
     } catch (Exception $e) {
 
         print "Problems with the database prevent execution.<br/>";
-
+        rename($real_input_file, AppConfig::$htmlFileOutErrorPath . $file);
         /*
         Code 2002   -> couldn't establish db connection - 
         Code 1049   -> Unknown database 
@@ -80,6 +87,7 @@
         if (!is_object($coronaData)){
 
             echo "<div>Could not parse Data for this document!</div>";
+            rename($real_input_file, AppConfig::$htmlFileOutErrorPath . $file);
             continue;
 
         }
@@ -93,7 +101,7 @@
             $obj->storeData($coronaData);
             // @ToDo: move file to processed
             // move file (is working but disabled)
-            // rename($real_input_file, $real_output_file);
+            rename($real_input_file, AppConfig::$htmlFileOutPath . $file);
 
         } catch (Exception $e) {
             
@@ -107,8 +115,15 @@
             print "<br />Code: " . $e->getCode();
 
             // @ToDo: move file to processed/duplicates
-            // move file (is working but disabled)
-            // rename($real_input_file, $real_output_file);
+            if ($e->getCode()===1062){
+
+                rename($real_input_file, AppConfig::$htmlFileOutDuplicatePath . $file);
+
+            } else {
+
+                rename($real_input_file, AppConfig::$htmlFileOutErrorPath . $file);
+
+            }
 
         }
 

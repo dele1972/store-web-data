@@ -85,7 +85,7 @@
         }
         
         // @ToDo - this debug output is important to get the wrong recovered and deceased count!
-        // $coronaData->printData(FALSE);
+        $coronaData->printData(FALSE);
 
         // store data to database and move the file
         try {
@@ -131,14 +131,14 @@
         // UTF-8 WAS NOT SET and will be fixed
         if( !strpos( $htmlContent, "charset=UTF-8" ) !== false) {
 
-            echo "UTF-8 WAS NOT SET and will be fixed";
+            // echo "UTF-8 WAS NOT SET and will be fixed";
             $document->loadHTML('<?xml version="1.0" encoding="UTF-8"?>' . $htmlContent);
             return $document;
 
         }
 
         // UTF-8 was set correctly, only regular loading is neccessary
-        echo "UTF-8 was set correctly, only regular loading is neccessary";
+        // echo "UTF-8 was set correctly, only regular loading is neccessary";
         $document->loadHTML($htmlContent);
         return $document;
 

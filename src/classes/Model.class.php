@@ -73,6 +73,7 @@
                     total_infected      MEDIUMINT UNSIGNED DEFAULT NULL,
                     total_recovered     MEDIUMINT UNSIGNED DEFAULT NULL,
                     total_deceased      MEDIUMINT UNSIGNED DEFAULT NULL,
+                    seven_day_incidence DOUBLE(8, 1) DEFAULT NULL,
                     UNIQUE KEY          (lastupdated_tmstmp)
                 );
                 EOSQL;
@@ -86,9 +87,9 @@
                     document_id             INT AUTO_INCREMENT PRIMARY KEY,
                     entry_id                INT NOT NULL,
                     document                MEDIUMTEXT DEFAULT NULL,
-                    array_age               JSON DEFAULT NULL,
-                    array_sex               JSON DEFAULT NULL,
-                    array_municipalities    JSON DEFAULT NULL
+                    array_age               JSON,
+                    array_sex               JSON,
+                    array_municipalities    JSON
                 );
                 EOSQL;
             return $this->pdo->exec($sql);
@@ -188,38 +189,74 @@
             $unixtimestamp = strtotime($dataObject->data['last-updated']);
             $cet = new DateTime(date_create_from_format('U',$unixtimestamp,new DateTimeZone('CET'))->format('d.m.Y H:i'));
 
-            $stmt = $this->pdo->prepare("
+            $sql = <<<END
+            INSERT INTO maindata (
+                lastupdated_tmstmp,
+                lastupdated_string,
+                total_infected,
+                total_recovered,
+                total_deceased
+            )
+                VALUES (
+                    FROM_UNIXTIME(:lastupdated_tmstmp),
+                    :lastupdated_string,
+                    :total_infected,
+                    :total_recovered,
+                    :total_deceased
+            )
+            END;
+
+            if (strlen($dataObject->data['seven_day_incidence']) > 0) {
+                $sql = <<<END
                 INSERT INTO maindata (
                     lastupdated_tmstmp,
                     lastupdated_string,
                     total_infected,
                     total_recovered,
-                    total_deceased
+                    total_deceased,
+                    seven_day_incidence
                 )
                     VALUES (
                         FROM_UNIXTIME(:lastupdated_tmstmp),
                         :lastupdated_string,
                         :total_infected,
                         :total_recovered,
-                        :total_deceased
-                    )
-                ;
-            ");
-
+                        :total_deceased,
+                        :seven_day_incidence
+                )
+                END;
+            }
+            
             try {
 
-                $stmt->execute([
-                    ':lastupdated_tmstmp' => $unixtimestamp,
-                    ':lastupdated_string' => $dataObject->data['last-updated'],
-                    ':total_infected' => $dataObject->data['infected-total'],
-                    ':total_recovered' => $dataObject->data['recovered-total'],
-                    ':total_deceased' => $dataObject->data['deceased-total']
-                ]);
+                $stmt = $this->pdo->prepare($sql);
+                
+                $stmt->bindParam(':lastupdated_tmstmp', $unixtimestamp);
+                $stmt->bindParam(':lastupdated_string', $dataObject->data['last-updated']);
+                $stmt->bindParam(':total_infected', $dataObject->data['infected-total']);
+                $stmt->bindParam(':total_recovered', $dataObject->data['recovered-total']);
+                $stmt->bindParam(':total_deceased', $dataObject->data['deceased-total']);
+
+                if (strlen($dataObject->data['seven_day_incidence']) > 0) {
+
+                    $stmt->bindParam(
+                        ':seven_day_incidence',
+                        str_replace(
+                            ",",
+                            ".",
+                            $dataObject->data['seven_day_incidence']
+                        )
+                    );
+
+                }
+            
+                $stmt->execute();
 
                 $this->last_mainentry_id = $this->pdo->lastInsertId();
 
             } catch (PDOException $e) {
 
+                // print var_dump($e);
                 throw new Exception($stmt->errorInfo()[2], $stmt->errorInfo()[1]);
 
             }
@@ -292,7 +329,7 @@
         private function insertDistributionMunicipalitiesData(CoronaDataFromHtml $dataObject) {
 
             $stmt = $this->pdo->prepare("
-                INSERT INTO distribution_municipalities (
+            INSERT INTO distribution_municipalities (
                     entry_id,
                     Barsinghausen_current,
                     Barsinghausen_sincebegin,

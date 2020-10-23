@@ -7,53 +7,159 @@
         private $unixtimestamp;
         private $cet;
         private $xpath;
+        private $xPathFirstSentenceVersion;
 
         function __construct(DomDocument $document) {
 
             $this->xpath = new DOMXpath($document);
             
+            // the structure of the first paragraph changed slightly during the time :(
+            $this->xPathFirstSentenceVersion[0]['infected-total'] = "//article[@class='content-view-full']/div/div[1]/div[2]/div[2]//p[1]/b[1]";
+            $this->xPathFirstSentenceVersion[0]['recovered-total'] = "//article[@class='content-view-full']/div/div[1]/div[2]/div[2]//p[1]/b[2]";
+            $this->xPathFirstSentenceVersion[0]['deceased-total'] = "//article[@class='content-view-full']/div/div[1]/div[2]/div[2]//p[1]/b[3]";
+            
+            $this->xPathFirstSentenceVersion[1]['infected-total'] = "//article[@class='content-view-full']/div/div[1]/div[2]/div[2]//p[1]/b[1]";
+            $this->xPathFirstSentenceVersion[1]['recovered-total'] = "//article[@class='content-view-full']/div/div[1]/div[2]/div[2]//p[1]/b[3]";
+            $this->xPathFirstSentenceVersion[1]['deceased-total'] = "//article[@class='content-view-full']/div/div[1]/div[2]/div[2]//p[1]/b[4]";
+
+            
             try {
+
                 $this->data['document'] = $document->saveHTML();
                 
                 $this->data['last-updated'] = $this->getAttributeValue(
                     $this->xpath->query("//article[@class='content-view-full']//time"),
                     'content'
                 );
-                $this->data['infected-total'] = $this->getNodeValue(
-                    $this->xpath->query("//article[@class='content-view-full']/div/div[1]/div[2]/div[2]/p[1]/b[1]")
-                );
-                // @ToDo: !!! sometimes an information about the increase count is inserted and then this xpath don't work!
-                $this->data['recovered-total'] = $this->getNodeValue(
-                    $this->xpath->query("//article[@class='content-view-full']/div/div[1]/div[2]/div[2]/p[1]/b[2]")
-                );
-                // @ToDo: !!! sometimes an information about the increase count is inserted and then this xpath don't work!
-                $this->data['deceased-total'] = $this->getNodeValue(
-                    $this->xpath->query("//article[@class='content-view-full']/div/div[1]/div[2]/div[2]/p[1]/b[3]")
-                );
+                $this->unixtimestamp = strtotime($this->data['last-updated']);
+                $this->cet = new DateTime(date_create_from_format('U',$this->unixtimestamp,new DateTimeZone('CET'))->format('d.m.Y H:i'));
+                
+                $this->data['seven_day_incidence'] = $this->getSevenDayIncidence();    
+
+                $alternateDataVersion = $this->setAlternateDataVersion();
+                $this->data['infected-total'] = $this->getIntValueOfHtmlpart($alternateDataVersion, 'infected-total');
+                $this->data['recovered-total'] = $this->getIntValueOfHtmlpart($alternateDataVersion, 'recovered-total');
+                $this->data['deceased-total'] = $this->getIntValueOfHtmlpart($alternateDataVersion, 'deceased-total');
+                
                 $this->data['infected-total-distribution-by-age'] = $this->getTableArray(
                     $this->xpath->query("//article[@class='content-view-full']//table[@summary='Alter']"),
                     TRUE
-                );
+                );    
                 $this->data['infected-total-distribution-by-sex'] = $this->getTableArray(
                     $this->xpath->query("//article[@class='content-view-full']//table[@summary='Geschlecht']"),
                     FALSE
-                );
+                );    
                 $this->data['infected-total-distribution-by-municipalities'] = $this->getTableArray(
                     $this->xpath->query("//article[@class='content-view-full']//table[@summary='Verteilung Kommunen']"),
                     TRUE
-                );
+                );    
             } catch (TypeError $e) {
+                print var_dump($e);
                 throw new Exception("wrong xpath");
                 // @ToDo: do a log if a query could not find the xpath in the document - e.g.:
-                //        Argument 1 passed to CoronaDataFromHtml::getNodeValue() must be an instance of DOMNodeList, bool given, called in /home/lederich/dev/web/domains/lederich.de/htdocs/store-web-data/src/CoronaDataFromHtml.php on line 28
-            }
-
-            $this->unixtimestamp = strtotime($this->data['last-updated']);
-            $this->cet = new DateTime(date_create_from_format('U',$this->unixtimestamp,new DateTimeZone('CET'))->format('d.m.Y H:i'));
+                //        Argument 1 passed to CoronaDataFromHtml::getNodeValue() must be an instance of DOMNodeList, bool given, called in /home/lederich/dev/web/domains/lederich.de/htdocs/store-web-data/src/CoronaDataFromHtml.php on line 28    
+            }    
 
         }
 
 
+        /**
+         * In the first paragraph sometime this information is added "(+26 verglichen zur letzten Meldung)".
+         * That mixes everything up - this function determine this alternate view.
+         * 
+         * returns
+         *      TRUE    for alternative view
+         *      FALSE   for regular view
+         */
+        private function checkFstPargrphAlternate(): bool {
+            return strpos(
+                $this->getNodeValue(
+                    $this->xpath->query(
+                        $this->xPathFirstSentenceVersion[0]['recovered-total']
+                    )
+                ),
+                "+"
+            ) !== FALSE;
+        }
+
+
+        /**
+         * returns
+         *    0 for regular view
+         *    1 for alternative view
+         */
+        private function setAlternateDataVersion(): int {
+            
+            if ($this->checkFstPargrphAlternate()){
+                
+                return 1;
+            }
+
+            return 0;
+        }
+
+
+        /**
+         * on 2020-10-02 the 7-day-incidence value is given in the first paragraph
+         */
+        private function getSevenDayIncidence() {
+
+            $returnValue = NULL;
+
+            if ($this->cet >= '2020-10-02') {
+
+                $returnValue = $this->getNumberValueOfString(
+                    str_replace(
+                        '7-Tages-Inzidenz pro 100.000',
+                        '',
+                        $this->getNodeValue(
+                            $this->xpath->query("//article[@class='content-view-full']/div/div[1]/div[2]/div[2]/p[1]")
+                        )
+                    )
+                );
+            }
+
+            return $returnValue;
+
+        }
+
+
+        /**
+         * strip all chars except 0-9 and ','
+         */
+        private function getNumberValueOfString(string $subject) {
+            
+            return preg_replace(
+                "/[^\d,]/",
+                "",
+                $subject
+            );
+
+        }
+
+
+        /**
+         * sometimes '.' is used as separator
+         */
+        private function getIntValueOfHtmlpart(int $version, string $key): int {
+
+            return (int)$this->getNumberValueOfString(
+                str_replace(
+                    ".",
+                    "",
+                    $this->getNodeValue(
+                        $this->xpath->query($this->xPathFirstSentenceVersion[$version][$key])
+                    )
+                )
+            );    
+
+        }
+
+
+        /**
+         * Converts a HTML Table to an array
+         * @ToDo: make it recursive to avoid (stacked) foreach
+         */
         private function getTableArray(DOMNodeList $resultingDOMNodeList, bool $tableWithColHeader = FALSE): array {
 
             $resultarray['head'] = [];
@@ -128,6 +234,9 @@
         }
 
 
+        /**
+         * Get a single value of a HTML with given xPath
+         */
         private function getNodeValue(DOMNodeList $resultingDOMNodeList): string {
 
             $result = "";
@@ -144,6 +253,8 @@
 
                 foreach ($nodes as $node) {
 
+                    #print var_dump($node->nodeValue);
+                    #print "<br />";
                     $result = filter_var($node->nodeValue, FILTER_SANITIZE_STRING, FILTER_FLAG_STRIP_HIGH);
 
                 }
@@ -187,6 +298,7 @@
             echo "<p>Total infected: ".$this->data['infected-total']."</p>";
             echo "<p>Total recovered: ".$this->data['recovered-total']."</p>";
             echo "<p>Total deceased: ".$this->data['deceased-total']."</p>";
+            echo "<p>7 day incidence: ".$this->data['seven_day_incidence']."</p>";
             // echo "<p>Document size: ".strlen($this->data['document'])."</p>";
 
             if ($printWithTableDump){

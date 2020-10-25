@@ -92,6 +92,7 @@
 
         }
         
+        $coronaData->setSourceFileName($file);
         // @ToDo - this debug output is important to get the wrong recovered and deceased count!
         $coronaData->printData(FALSE);
 
@@ -99,8 +100,7 @@
         try {
 
             $obj->storeData($coronaData);
-            // @ToDo: move file to processed
-            // move file (is working but disabled)
+            // move file to processed
             rename($real_input_file, AppConfig::$htmlFileOutPath . $file);
 
         } catch (Exception $e) {
@@ -114,7 +114,7 @@
             print "<br />Error: " . $e->getMessage();
             print "<br />Code: " . $e->getCode();
 
-            // @ToDo: move file to processed/duplicates
+            // move file to processed/duplicates
             if ($e->getCode()===1062){
 
                 rename($real_input_file, AppConfig::$htmlFileOutDuplicatePath . $file);
@@ -133,6 +133,7 @@
     </body>
     </html>
     END;
+
 
     function getDomDocument(string $htmlSourceFileName):DomDocument {
 

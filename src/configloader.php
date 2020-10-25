@@ -4,7 +4,7 @@ spl_autoload_register('myConfigLoader');
 
 function myConfigLoader($className) {
 
-    //$alternatePath = "../../.data-nogit/store-web-data/AppConfig.php";
+    #$alternatePath = "../../../.data-nogit/store-web-data/AppConfig.php";
 
     if (!isset($alternatePath) || !file_exists($alternatePath)){
 

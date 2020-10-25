@@ -17,7 +17,7 @@ store captured data to my db
 
 ## information
 
-- rename/move needs 764 on samples and processed
+- rename/move needs 764 permission on samples, processed, error, duplicate
 - config/AppConfig.php should only be used as a template
   - copy that to another folder (outside of document root)
   - include that 

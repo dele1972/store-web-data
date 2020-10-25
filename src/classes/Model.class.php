@@ -27,8 +27,6 @@
 
         function __construct($databaseCred) {
 
-            // print var_dump($databaseCred);
-
             $conStr = sprintf("mysql:host=%s;dbname=%s;", $databaseCred['host'], $databaseCred['name']);
 
             try {
@@ -36,7 +34,6 @@
                 $this->pdo = new PDO($conStr, $databaseCred['user'], $databaseCred['password']);
                 // we need to disable the pdo silent mode to be able to react on errors (https://stackoverflow.com/a/32648423)
                 $this->pdo->setAttribute( PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-                // $this->pdo->exec("SET NAMES utf8mb4");
                 $this->pdo->exec("SET CHARACTER SET utf8mb4");
                 
                 // create Tables if not exists
@@ -86,6 +83,7 @@
                 CREATE TABLE IF NOT EXISTS document (
                     document_id             INT AUTO_INCREMENT PRIMARY KEY,
                     entry_id                INT NOT NULL,
+                    source_file_name        VARCHAR(255) DEFAULT NULL,
                     document                MEDIUMTEXT DEFAULT NULL,
                     array_age               JSON,
                     array_sex               JSON,
@@ -256,7 +254,6 @@
 
             } catch (PDOException $e) {
 
-                // print var_dump($e);
                 throw new Exception($stmt->errorInfo()[2], $stmt->errorInfo()[1]);
 
             }
@@ -526,6 +523,7 @@
             $stmt = $this->pdo->prepare("
                 INSERT INTO document (
                     entry_id,
+                    source_file_name,
                     document,
                     array_age,
                     array_sex,
@@ -533,6 +531,7 @@
                 )
                     VALUES (
                         :entry_id,
+                        :source_file_name,
                         :document,
                         :array_age,
                         :array_sex,
@@ -545,10 +544,9 @@
 
                 // @ToDo make bind statements in a loop and then an empty execute
 
-                // @ToDo: encoding of document is wrong
-                // print $dataObject->data['document'];
                 $stmt->execute([
                     ':entry_id' => $this->last_mainentry_id,
+                    ':source_file_name' => $dataObject->data['sourceFilenName'],
                     ':document' => $dataObject->data['document'],
                     ':array_age' => json_encode($dataObject->data['infected-total-distribution-by-age']),
                     ':array_sex' => json_encode($dataObject->data['infected-total-distribution-by-sex']),
@@ -580,6 +578,7 @@
             } catch (Exception $e) {
 
                 throw new Exception($e->getMessage(), $e->getCode());
+                // @ToDo: remove Zombie code!
                 //print var_dump($e->getMessage());
                 //print var_dump($e->getCode());
                 //print_r ("Error2: " . $e->errorinfo()[1] . "<br />");

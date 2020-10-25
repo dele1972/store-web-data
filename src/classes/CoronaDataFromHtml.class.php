@@ -21,7 +21,6 @@
             $this->xPathFirstSentenceVersion[1]['infected-total'] = "//article[@class='content-view-full']/div/div[1]/div[2]/div[2]//p[1]/b[1]";
             $this->xPathFirstSentenceVersion[1]['recovered-total'] = "//article[@class='content-view-full']/div/div[1]/div[2]/div[2]//p[1]/b[3]";
             $this->xPathFirstSentenceVersion[1]['deceased-total'] = "//article[@class='content-view-full']/div/div[1]/div[2]/div[2]//p[1]/b[4]";
-
             
             try {
 
@@ -41,10 +40,7 @@
                 $this->data['recovered-total'] = $this->getIntValueOfHtmlpart($alternateDataVersion, 'recovered-total');
                 $this->data['deceased-total'] = $this->getIntValueOfHtmlpart($alternateDataVersion, 'deceased-total');
                 
-                $this->data['infected-total-distribution-by-age'] = $this->getTableArray(
-                    $this->xpath->query("//article[@class='content-view-full']//table[@summary='Alter']"),
-                    TRUE
-                );    
+                $this->data['infected-total-distribution-by-age'] = $this->getTotalDistributionByAge();    
                 $this->data['infected-total-distribution-by-sex'] = $this->getTableArray(
                     $this->xpath->query("//article[@class='content-view-full']//table[@summary='Geschlecht']"),
                     FALSE
@@ -53,16 +49,52 @@
                     $this->xpath->query("//article[@class='content-view-full']//table[@summary='Verteilung Kommunen']"),
                     TRUE
                 );    
+
             } catch (TypeError $e) {
+
                 print var_dump($e);
                 throw new Exception("wrong xpath");
                 // @ToDo: do a log if a query could not find the xpath in the document - e.g.:
                 //        Argument 1 passed to CoronaDataFromHtml::getNodeValue() must be an instance of DOMNodeList, bool given, called in /home/lederich/dev/web/domains/lederich.de/htdocs/store-web-data/src/CoronaDataFromHtml.php on line 28    
+
             }    
 
         }
 
 
+        /**
+         * since 2020-10-16 the xpath of the distribution by age table is changed
+         */
+        private function getTotalDistributionByAge() {
+
+            try {
+                
+                if ($this->xpath->query("//article[@class='content-view-full']//table[@summary='Alter']")->length ===1){
+                    
+                    return $this->getTableArray(
+                        $this->xpath->query("//article[@class='content-view-full']//table[@summary='Alter']"),
+                        TRUE
+                    );
+
+                }
+                
+                return $this->getTableArray(
+                    $this->xpath->query("//article[@class='content-view-full']//table[@summary='s']"),
+                    TRUE
+                );
+
+            } catch (TypeError $e) {
+
+                print var_dump($e);
+                throw new Exception("wrong xpath");
+                // @ToDo: do a log if a query could not find the xpath in the document - e.g.:
+                //        Argument 1 passed to CoronaDataFromHtml::getNodeValue() must be an instance of DOMNodeList, bool given, called in /home/lederich/dev/web/domains/lederich.de/htdocs/store-web-data/src/CoronaDataFromHtml.php on line 28    
+
+            }
+            
+        }
+
+        
         /**
          * In the first paragraph sometime this information is added "(+26 verglichen zur letzten Meldung)".
          * That mixes everything up - this function determine this alternate view.
@@ -72,6 +104,7 @@
          *      FALSE   for regular view
          */
         private function checkFstPargrphAlternate(): bool {
+
             return strpos(
                 $this->getNodeValue(
                     $this->xpath->query(
@@ -80,6 +113,7 @@
                 ),
                 "+"
             ) !== FALSE;
+
         }
 
 
@@ -96,6 +130,7 @@
             }
 
             return 0;
+
         }
 
 
@@ -184,7 +219,6 @@
                 foreach ($tableElement->childNodes as $key => $trElement) {
 
                     // $trElement->tagName is allways 'tr'
-                    #echo "<hr /><div style='color:blue;'>TR Count = ".($includesTotalTR-$trLoopCount)."</div><br />";
                     // with the following you can iterate downwards from total tr node count to 1 ($includesTotalChildNodes-$cellLoopCount) in the foreach
                     $includesTotalChildNodes = $trElement->childNodes->length;
                     $cellLoopCount = 0;
@@ -194,7 +228,6 @@
                     foreach ($trElement->childNodes as $cellKey => $cellNode){
                         
                         // $cellNode->tagName is sometimes 'td' (every second is an unneeded object)
-                        #echo "<hr /><div style='color:red;'>Cell Count = ".($includesTotalChildNodes-$cellLoopCount)."</div><br />";
 
                         $cellLoopCount++;
 
@@ -214,6 +247,7 @@
                         }
                         
                         array_push($rowValues, trim($cellNode->nodeValue));
+
                     }
 
                     $trLoopCount++;
@@ -231,6 +265,7 @@
             }
 
             return $resultarray;
+
         }
 
 
@@ -253,8 +288,6 @@
 
                 foreach ($nodes as $node) {
 
-                    #print var_dump($node->nodeValue);
-                    #print "<br />";
                     $result = filter_var($node->nodeValue, FILTER_SANITIZE_STRING, FILTER_FLAG_STRIP_HIGH);
 
                 }
@@ -292,6 +325,12 @@
         }
 
 
+        public function setSourceFileName(string $filename) {
+
+            $this->data['sourceFilenName'] = $filename;
+
+        }
+
         public function printData(bool $printWithTableDump = TRUE) {
 
             echo "<p>Last Updated: ".$this->data['last-updated']." / " . $this->unixtimestamp ." / " . $this->cet->format('d.m.Y H:i') . "</p>";
@@ -299,6 +338,7 @@
             echo "<p>Total recovered: ".$this->data['recovered-total']."</p>";
             echo "<p>Total deceased: ".$this->data['deceased-total']."</p>";
             echo "<p>7 day incidence: ".$this->data['seven_day_incidence']."</p>";
+            echo "<p>Source Filename: ".$this->data['sourceFilenName']."</p>";
             // echo "<p>Document size: ".strlen($this->data['document'])."</p>";
 
             if ($printWithTableDump){

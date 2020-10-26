@@ -20,7 +20,7 @@
         <link rel='stylesheet' type='text/css' href='https://lederich.de/styles/global.css'>
     </head>
     <body>
-    END;
+END;
     // we don't want the '.' and '..' elements of scandir in our array
     $files = array_diff(scandir(AppConfig::$htmlFileInputPath), array('.', '..'));
     $count_files = count($files);
@@ -132,7 +132,7 @@
     echo <<<END
     </body>
     </html>
-    END;
+END;
 
 
     function getDomDocument(string $htmlSourceFileName):DomDocument {

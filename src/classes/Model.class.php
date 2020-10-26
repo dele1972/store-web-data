@@ -73,7 +73,7 @@
                     seven_day_incidence DOUBLE(8, 1) DEFAULT NULL,
                     UNIQUE KEY          (lastupdated_tmstmp)
                 );
-                EOSQL;
+EOSQL;
             return $this->pdo->exec($sql);
         }
 
@@ -89,7 +89,7 @@
                     array_sex               JSON,
                     array_municipalities    JSON
                 );
-                EOSQL;
+EOSQL;
             return $this->pdo->exec($sql);
         }
 
@@ -110,7 +110,7 @@
                     80_to_x         MEDIUMINT UNSIGNED DEFAULT NULL,
                     not_specified   MEDIUMINT UNSIGNED DEFAULT NULL
                 );
-                EOSQL;
+EOSQL;
             return $this->pdo->exec($sql);
         }
 
@@ -124,7 +124,7 @@
                     female          DOUBLE(4, 1) DEFAULT NULL,
                     not_specified   DOUBLE(4, 1) DEFAULT NULL
                 );
-                EOSQL;
+EOSQL;
             return $this->pdo->exec($sql);
         }
 
@@ -177,7 +177,7 @@
                     Wunstorf_current                        MEDIUMINT UNSIGNED DEFAULT NULL,
                     Wunstorf_sincebegin                     MEDIUMINT UNSIGNED DEFAULT NULL
                 );
-                EOSQL;
+EOSQL;
             return $this->pdo->exec($sql);
         }
 
@@ -202,7 +202,7 @@
                     :total_recovered,
                     :total_deceased
             )
-            END;
+END;
 
             if (strlen($dataObject->data['seven_day_incidence']) > 0) {
                 $sql = <<<END
@@ -222,7 +222,7 @@
                         :total_deceased,
                         :seven_day_incidence
                 )
-                END;
+END;
             }
             
             try {

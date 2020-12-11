@@ -325,39 +325,18 @@ END;
 
         private function insertDistributionMunicipalitiesData(CoronaDataFromHtml $dataObject) {
 
-            // sql statement - head
-            $sql = "INSERT INTO distribution_municipalities ( entry_id,";
 
-            // @ToDo: HIER BIN ICH - bei älteren Datensätzen darf _sevendayin nicht im Statement vorkommen
-            // [ ] col
-            // [ ] values
-            // [ ] bind
-                echo "<h1>Hier bin ich dran: insertDistributionMunicipalitiesData()" . $dataObject->data['infected-total-distribution-by-municipalities']['data'][0][1] . "</h1>";
-                print var_dump($dataObject->data['infected-total-distribution-by-municipalities']['data'][0]);
-                // use this array count, if 3 then prevent use of _sevendayin
-                print "<br/>array count = " . count($dataObject->data['infected-total-distribution-by-municipalities']['data'][0]);
-                print "<hr />"; 
-            // sql statement - COLUMNS 
-            foreach ($this->municipalities as $element) {
-                $sql .= $element . "_current,";
-                $sql .= $element . "_sincebegin,";
-                $sql .= $element . "_sevendayin,";
-            };
+            // in the beginning the col for Seven-Days-Incidence is not given
+            $useSevDayInc = count($dataObject->data['infected-total-distribution-by-municipalities']['data'][0]) === 4;
 
-            $sql = $this->last_substr_replace(",", ") ", $sql);
+            // build sql statement - COLUMNS 
+            $sql = $this->buildMunicipalitiesInsertSQLColumns($useSevDayInc);
 
-            // sql statement - VALUES 
-            $sql .= "VALUES (:entry_id,";
-
-            foreach ($this->municipalities as $element) {
-                $sql .= ":" . $element . "_current,";
-                $sql .= ":" . $element . "_sincebegin,";
-                $sql .= ":" . $element . "_sevendayin,";
-            };
-
-            $sql = $this->last_substr_replace(",", ");", $sql);
+            // build sql statement - VALUES 
+            $sql .= $this->addMunicipalitiesInsertSQLValues($useSevDayInc);
             $stmt = $this->pdo->prepare($sql);
 
+            // bind parameters
             $stmt->bindParam(':entry_id', $this->last_mainentry_id);
 
             foreach ($this->municipalities as $key => $element) {
@@ -380,14 +359,16 @@ END;
                       $dataObject->data['infected-total-distribution-by-municipalities']['data'][$key][2]
                     )
                 );
-                $stmt->bindParam(
-                    ':' . $element . '_sevendayin',
-                    str_replace(
-                      ",",
-                      ".",
-                      $dataObject->data['infected-total-distribution-by-municipalities']['data'][$key][3]
-                    )
-                );
+                if ($useSevDayInc) {
+                  $stmt->bindParam(
+                      ':' . $element . '_sevendayin',
+                      str_replace(
+                        ",",
+                        ".",
+                        $dataObject->data['infected-total-distribution-by-municipalities']['data'][$key][3]
+                      )
+                  );
+                }
 
             };
 
@@ -402,6 +383,54 @@ END;
             }
 
             return TRUE;
+
+        }
+
+
+        private function buildMunicipalitiesInsertSQLColumns($useSevDayInc) {
+
+            $sql = "INSERT INTO distribution_municipalities ( entry_id,";
+        
+            foreach ($this->municipalities as $element) {
+
+                $sql .= $element . "_current,";
+                $sql .= $element . "_sincebegin,";
+
+                if ($useSevDayInc) {
+
+                  $sql .= $element . "_sevendayin,";
+
+                }
+
+            };
+
+            $sql = $this->last_substr_replace(",", ") ", $sql);
+
+            return $sql;
+
+        }
+
+
+        private function addMunicipalitiesInsertSQLValues($useSevDayInc) {
+
+            $sql .= "VALUES (:entry_id,";
+
+            foreach ($this->municipalities as $element) {
+
+                $sql .= ":" . $element . "_current,";
+                $sql .= ":" . $element . "_sincebegin,";
+
+                if ($useSevDayInc) {
+              
+                  $sql .= ":" . $element . "_sevendayin,";
+              
+                }
+
+            };
+
+            $sql = $this->last_substr_replace(",", ");", $sql);
+
+            return $sql;
 
         }
 
@@ -428,10 +457,12 @@ END;
 
                 // @ToDo make bind statements in a loop and then an empty execute
                 $stmt->execute([
+
                     ':entry_id' => $this->last_mainentry_id,
                     ':male'   => (float) str_replace(" Prozent","", $dataObject->data['infected-total-distribution-by-sex']['data'][0][1]),
                     ':female'   => (float) str_replace(" Prozent","", $dataObject->data['infected-total-distribution-by-sex']['data'][1][1]),
                     ':not_specified'   => (float) str_replace(" Prozent","", $dataObject->data['infected-total-distribution-by-sex']['data'][2][1])
+  
                 ]);
 
             } catch (PDOException $e) {

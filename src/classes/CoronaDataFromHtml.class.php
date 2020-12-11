@@ -139,22 +139,26 @@
          */
         private function getSevenDayIncidence() {
 
-            $returnValue = NULL;
+            $firstParagraph = $this->xpath->query("//article[@class='content-view-full']/div/div[1]/div[2]/div[2]/p[1]")[0]->textContent;
+            $searchString = "7-Tages-Inzidenz";
 
-            if ($this->cet >= '2020-10-02') {
+            if (!strpos($firstParagraph, $searchString) !== false) {
 
-                $returnValue = $this->getNumberValueOfString(
-                    str_replace(
-                        '7-Tages-Inzidenz pro 100.000',
-                        '',
-                        $this->getNodeValue(
-                            $this->xpath->query("//article[@class='content-view-full']/div/div[1]/div[2]/div[2]/p[1]")
-                        )
-                    )
-                );
+              return NULL;
+
             }
 
-            return $returnValue;
+            $substr = substr($firstParagraph, strpos($firstParagraph,"7-Tages-Inzidenz"));
+
+            return $this->getNumberValueOfString(
+
+                str_replace(
+                    '7-Tages-Inzidenz pro 100.000',
+                    '',
+                    $substr
+
+                )
+            );
 
         }
 

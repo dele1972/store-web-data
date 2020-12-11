@@ -209,7 +209,14 @@
             // iterate the Nodes of the DOMNodeList (https://www.php.net/manual/en/class.domnodelist.php) -> should be one Table
             foreach ($resultingDOMNodeList as $tableElement) {
 
-                // $tableElement->tagName is allways 'table'
+                // Since about 4.1.2020 the tablestruckture was changed and a TBODY layer was drawn
+                // in between. This hack handles that so that TR elements can still be processed
+                // in the foreach loop.
+                  if ($tableElement->firstChild->tagName === "tbody") {
+                    $tableElement = $tableElement->childNodes[0];
+                  }
+
+                // note: in this scope is $tableElement->tagName is 'table' or 'tbody'
                 
                 // with the following you can iterate downwards from total tr node count to 1 ($includesTotalTR-$trLoopCount) in the foreach
                 $includesTotalTR = $tableElement->childNodes->length;
@@ -225,6 +232,7 @@
 
                     $rowValues = [];
 
+                    // iterate td (and something else)
                     foreach ($trElement->childNodes as $cellKey => $cellNode){
                         
                         // $cellNode->tagName is sometimes 'td' (every second is an unneeded object)

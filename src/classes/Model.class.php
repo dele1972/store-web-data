@@ -23,6 +23,29 @@
         private $unixtimestamp;
         private $pdo;
         private $last_mainentry_id;
+        private $municipalities = [
+                "Barsinghausen",
+                "Burgdorf",
+                "Burgwedel",
+                "Garbsen",
+                "Gehrden",
+                "Hemmingen",
+                "Isernhagen",
+                "Laatzen",
+                "Landeshauptstadt_Hannover",
+                "Langenhagen",
+                "Lehrte",
+                "Neustadt_a_Rbge",
+                "Pattensen",
+                "Ronnenberg",
+                "Seelze",
+                "Sehnde",
+                "Springe",
+                "Uetze",
+                "Wedemark",
+                "Wennigsen",
+                "Wunstorf"
+        ];
 
 
         function __construct($databaseCred) {
@@ -132,53 +155,30 @@ EOSQL;
         private function createDistributionMunicipalitiesTable() {
             $sql = <<<EOSQL
                 CREATE TABLE IF NOT EXISTS distribution_municipalities (
-                    dist_municapilities_id                             INT AUTO_INCREMENT PRIMARY KEY,
+                    dist_municapilities_id                  INT AUTO_INCREMENT PRIMARY KEY,
                     entry_id                                INT NOT NULL,
-                    Barsinghausen_current                   MEDIUMINT UNSIGNED DEFAULT NULL,
-                    Barsinghausen_sincebegin                MEDIUMINT UNSIGNED DEFAULT NULL,
-                    Burgdorf_current                        MEDIUMINT UNSIGNED DEFAULT NULL,
-                    Burgdorf_sincebegin                     MEDIUMINT UNSIGNED DEFAULT NULL,
-                    Burgwedel_current                       MEDIUMINT UNSIGNED DEFAULT NULL,
-                    Burgwedel_sincebegin                    MEDIUMINT UNSIGNED DEFAULT NULL,
-                    Garbsen_current                         MEDIUMINT UNSIGNED DEFAULT NULL,
-                    Garbsen_sincebegin                      MEDIUMINT UNSIGNED DEFAULT NULL,
-                    Gehrden_current                         MEDIUMINT UNSIGNED DEFAULT NULL,
-                    Gehrden_sincebegin                      MEDIUMINT UNSIGNED DEFAULT NULL,
-                    Hemmingen_current                       MEDIUMINT UNSIGNED DEFAULT NULL,
-                    Hemmingen_sincebegin                    MEDIUMINT UNSIGNED DEFAULT NULL,
-                    Isernhagen_current                      MEDIUMINT UNSIGNED DEFAULT NULL,
-                    Isernhagen_sincebegin                   MEDIUMINT UNSIGNED DEFAULT NULL,
-                    Laatzen_current                         MEDIUMINT UNSIGNED DEFAULT NULL,
-                    Laatzen_sincebegin                      MEDIUMINT UNSIGNED DEFAULT NULL,
-                    Landeshauptstadt_Hannover_current       MEDIUMINT UNSIGNED DEFAULT NULL,
-                    Landeshauptstadt_Hannover_sincebegin    MEDIUMINT UNSIGNED DEFAULT NULL,
-                    Langenhagen_current                     MEDIUMINT UNSIGNED DEFAULT NULL,
-                    Langenhagen_sincebegin                  MEDIUMINT UNSIGNED DEFAULT NULL,
-                    Lehrte_current                          MEDIUMINT UNSIGNED DEFAULT NULL,
-                    Lehrte_sincebegin                       MEDIUMINT UNSIGNED DEFAULT NULL,
-                    Neustadt_a_Rbge_current                 MEDIUMINT UNSIGNED DEFAULT NULL,
-                    Neustadt_a_Rbge_sincebegin              MEDIUMINT UNSIGNED DEFAULT NULL,
-                    Pattensen_current                       MEDIUMINT UNSIGNED DEFAULT NULL,
-                    Pattensen_sincebegin                    MEDIUMINT UNSIGNED DEFAULT NULL,
-                    Ronnenberg_current                      MEDIUMINT UNSIGNED DEFAULT NULL,
-                    Ronnenberg_sincebegin                   MEDIUMINT UNSIGNED DEFAULT NULL,
-                    Seelze_current                          MEDIUMINT UNSIGNED DEFAULT NULL,
-                    Seelze_sincebegin                       MEDIUMINT UNSIGNED DEFAULT NULL,
-                    Sehnde_current                          MEDIUMINT UNSIGNED DEFAULT NULL,
-                    Sehnde_sincebegin                       MEDIUMINT UNSIGNED DEFAULT NULL,
-                    Springe_current                         MEDIUMINT UNSIGNED DEFAULT NULL,
-                    Springe_sincebegin                      MEDIUMINT UNSIGNED DEFAULT NULL,
-                    Uetze_current                           MEDIUMINT UNSIGNED DEFAULT NULL,
-                    Uetze_sincebegin                        MEDIUMINT UNSIGNED DEFAULT NULL,
-                    Wedemark_current                        MEDIUMINT UNSIGNED DEFAULT NULL,
-                    Wedemark_sincebegin                     MEDIUMINT UNSIGNED DEFAULT NULL,
-                    Wennigsen_current                       MEDIUMINT UNSIGNED DEFAULT NULL,
-                    Wennigsen_sincebegin                    MEDIUMINT UNSIGNED DEFAULT NULL,
-                    Wunstorf_current                        MEDIUMINT UNSIGNED DEFAULT NULL,
-                    Wunstorf_sincebegin                     MEDIUMINT UNSIGNED DEFAULT NULL
-                );
 EOSQL;
+
+            // add community to sql with each given column
+            // @ToDo recursive or with second foreach ["_current", "_sincebegin", "_sevendayin"]
+            foreach ($this->municipalities as $element) {
+                $sql .= $element . "_current MEDIUMINT UNSIGNED DEFAULT NULL,";
+                $sql .= $element . "_sincebegin MEDIUMINT UNSIGNED DEFAULT NULL,";
+                $sql .= $element . "_sevendayin DOUBLE(8,1) DEFAULT NULL,";
+            }
+            
+            $sql = $this->last_substr_replace(",", ");", $sql);
+            
             return $this->pdo->exec($sql);
+
+        }
+
+        private function last_substr_replace(string $search, string $replace, string $subject): string {
+            
+            $lastIndex = strrpos($subject, $search);
+            $subject = substr_replace($subject, $replace, $lastIndex, strlen($search));
+            return $subject;
+
         }
 
 
@@ -325,148 +325,75 @@ END;
 
         private function insertDistributionMunicipalitiesData(CoronaDataFromHtml $dataObject) {
 
-            $stmt = $this->pdo->prepare("
-            INSERT INTO distribution_municipalities (
-                    entry_id,
-                    Barsinghausen_current,
-                    Barsinghausen_sincebegin,
-                    Burgdorf_current,
-                    Burgdorf_sincebegin,
-                    Burgwedel_current,
-                    Burgwedel_sincebegin,
-                    Garbsen_current,
-                    Garbsen_sincebegin,
-                    Gehrden_current,
-                    Gehrden_sincebegin,
-                    Hemmingen_current,
-                    Hemmingen_sincebegin,
-                    Isernhagen_current,
-                    Isernhagen_sincebegin,
-                    Laatzen_current,
-                    Laatzen_sincebegin,
-                    Landeshauptstadt_Hannover_current,
-                    Landeshauptstadt_Hannover_sincebegin,
-                    Langenhagen_current,
-                    Langenhagen_sincebegin,
-                    Lehrte_current,
-                    Lehrte_sincebegin,
-                    Neustadt_a_Rbge_current,
-                    Neustadt_a_Rbge_sincebegin,
-                    Pattensen_current,
-                    Pattensen_sincebegin,
-                    Ronnenberg_current,
-                    Ronnenberg_sincebegin,
-                    Seelze_current,
-                    Seelze_sincebegin,
-                    Sehnde_current,
-                    Sehnde_sincebegin,
-                    Springe_current,
-                    Springe_sincebegin,
-                    Uetze_current,
-                    Uetze_sincebegin,
-                    Wedemark_current,
-                    Wedemark_sincebegin,
-                    Wennigsen_current,
-                    Wennigsen_sincebegin,
-                    Wunstorf_current,
-                    Wunstorf_sincebegin
-                )
-                    VALUES (
-                        :entry_id,
-                        :Barsinghausen_current,
-                        :Barsinghausen_sincebegin,
-                        :Burgdorf_current,
-                        :Burgdorf_sincebegin,
-                        :Burgwedel_current,
-                        :Burgwedel_sincebegin,
-                        :Garbsen_current,
-                        :Garbsen_sincebegin,
-                        :Gehrden_current,
-                        :Gehrden_sincebegin,
-                        :Hemmingen_current,
-                        :Hemmingen_sincebegin,
-                        :Isernhagen_current,
-                        :Isernhagen_sincebegin,
-                        :Laatzen_current,
-                        :Laatzen_sincebegin,
-                        :Landeshauptstadt_Hannover_current,
-                        :Landeshauptstadt_Hannover_sincebegin,
-                        :Langenhagen_current,
-                        :Langenhagen_sincebegin,
-                        :Lehrte_current,
-                        :Lehrte_sincebegin,
-                        :Neustadt_a_Rbge_current,
-                        :Neustadt_a_Rbge_sincebegin,
-                        :Pattensen_current,
-                        :Pattensen_sincebegin,
-                        :Ronnenberg_current,
-                        :Ronnenberg_sincebegin,
-                        :Seelze_current,
-                        :Seelze_sincebegin,
-                        :Sehnde_current,
-                        :Sehnde_sincebegin,
-                        :Springe_current,
-                        :Springe_sincebegin,
-                        :Uetze_current,
-                        :Uetze_sincebegin,
-                        :Wedemark_current,
-                        :Wedemark_sincebegin,
-                        :Wennigsen_current,
-                        :Wennigsen_sincebegin,
-                        :Wunstorf_current,
-                        :Wunstorf_sincebegin
+            // sql statement - head
+            $sql = "INSERT INTO distribution_municipalities ( entry_id,";
+
+            // @ToDo: HIER BIN ICH - bei älteren Datensätzen darf _sevendayin nicht im Statement vorkommen
+            // [ ] col
+            // [ ] values
+            // [ ] bind
+                echo "<h1>Hier bin ich dran: insertDistributionMunicipalitiesData()" . $dataObject->data['infected-total-distribution-by-municipalities']['data'][0][1] . "</h1>";
+                print var_dump($dataObject->data['infected-total-distribution-by-municipalities']['data'][0]);
+                // use this array count, if 3 then prevent use of _sevendayin
+                print "<br/>array count = " . count($dataObject->data['infected-total-distribution-by-municipalities']['data'][0]);
+                print "<hr />"; 
+            // sql statement - COLUMNS 
+            foreach ($this->municipalities as $element) {
+                $sql .= $element . "_current,";
+                $sql .= $element . "_sincebegin,";
+                $sql .= $element . "_sevendayin,";
+            };
+
+            $sql = $this->last_substr_replace(",", ") ", $sql);
+
+            // sql statement - VALUES 
+            $sql .= "VALUES (:entry_id,";
+
+            foreach ($this->municipalities as $element) {
+                $sql .= ":" . $element . "_current,";
+                $sql .= ":" . $element . "_sincebegin,";
+                $sql .= ":" . $element . "_sevendayin,";
+            };
+
+            $sql = $this->last_substr_replace(",", ");", $sql);
+            $stmt = $this->pdo->prepare($sql);
+
+            $stmt->bindParam(':entry_id', $this->last_mainentry_id);
+
+            foreach ($this->municipalities as $key => $element) {
+                /* echo "<h1>{$element} / {$key} " . $dataObject->data['infected-total-distribution-by-municipalities']['data'][0][1] . "</h1>"; */
+                /* print var_dump($dataObject->data['infected-total-distribution-by-municipalities']['data'][$key]); */
+                /* print "<hr />"; */ 
+                $stmt->bindParam(
+                    ':' . $element . '_current',
+                    str_replace(
+                      ".",
+                      "",
+                      $dataObject->data['infected-total-distribution-by-municipalities']['data'][$key][1]
                     )
-                ;
-            ");
+                );
+                $stmt->bindParam(
+                    ':' . $element . '_sincebegin',
+                    str_replace(
+                      ".",
+                      "",
+                      $dataObject->data['infected-total-distribution-by-municipalities']['data'][$key][2]
+                    )
+                );
+                $stmt->bindParam(
+                    ':' . $element . '_sevendayin',
+                    str_replace(
+                      ",",
+                      ".",
+                      $dataObject->data['infected-total-distribution-by-municipalities']['data'][$key][3]
+                    )
+                );
+
+            };
 
             try {
 
-                // @ToDo make bind statements in a loop and then an empty execute
-                $stmt->execute([
-                    ':entry_id' => $this->last_mainentry_id,
-                    ':Barsinghausen_current' => $dataObject->data['infected-total-distribution-by-municipalities']['data'][0][1],
-                    ':Barsinghausen_sincebegin' => $dataObject->data['infected-total-distribution-by-municipalities']['data'][0][2],
-                    ':Burgdorf_current' => $dataObject->data['infected-total-distribution-by-municipalities']['data'][1][1],
-                    ':Burgdorf_sincebegin' => $dataObject->data['infected-total-distribution-by-municipalities']['data'][1][2],
-                    ':Burgwedel_current' => $dataObject->data['infected-total-distribution-by-municipalities']['data'][2][1],
-                    ':Burgwedel_sincebegin' => $dataObject->data['infected-total-distribution-by-municipalities']['data'][2][2],
-                    ':Garbsen_current' => $dataObject->data['infected-total-distribution-by-municipalities']['data'][3][1],
-                    ':Garbsen_sincebegin' => $dataObject->data['infected-total-distribution-by-municipalities']['data'][3][2],
-                    ':Gehrden_current' => $dataObject->data['infected-total-distribution-by-municipalities']['data'][4][1],
-                    ':Gehrden_sincebegin' => $dataObject->data['infected-total-distribution-by-municipalities']['data'][4][2],
-                    ':Hemmingen_current' => $dataObject->data['infected-total-distribution-by-municipalities']['data'][5][1],
-                    ':Hemmingen_sincebegin' => $dataObject->data['infected-total-distribution-by-municipalities']['data'][5][2],
-                    ':Isernhagen_current' => $dataObject->data['infected-total-distribution-by-municipalities']['data'][6][1],
-                    ':Isernhagen_sincebegin' => $dataObject->data['infected-total-distribution-by-municipalities']['data'][6][2],
-                    ':Laatzen_current' => $dataObject->data['infected-total-distribution-by-municipalities']['data'][7][1],
-                    ':Laatzen_sincebegin' => $dataObject->data['infected-total-distribution-by-municipalities']['data'][7][2],
-                    ':Landeshauptstadt_Hannover_current' => $dataObject->data['infected-total-distribution-by-municipalities']['data'][8][1],
-                    ':Landeshauptstadt_Hannover_sincebegin' => $dataObject->data['infected-total-distribution-by-municipalities']['data'][8][2],
-                    ':Langenhagen_current' => $dataObject->data['infected-total-distribution-by-municipalities']['data'][9][1],
-                    ':Langenhagen_sincebegin' => $dataObject->data['infected-total-distribution-by-municipalities']['data'][9][2],
-                    ':Lehrte_current' => $dataObject->data['infected-total-distribution-by-municipalities']['data'][10][1],
-                    ':Lehrte_sincebegin' => $dataObject->data['infected-total-distribution-by-municipalities']['data'][10][2],
-                    ':Neustadt_a_Rbge_current' => $dataObject->data['infected-total-distribution-by-municipalities']['data'][11][1],
-                    ':Neustadt_a_Rbge_sincebegin' => $dataObject->data['infected-total-distribution-by-municipalities']['data'][1][2],
-                    ':Pattensen_current' => $dataObject->data['infected-total-distribution-by-municipalities']['data'][12][1],
-                    ':Pattensen_sincebegin' => $dataObject->data['infected-total-distribution-by-municipalities']['data'][12][2],
-                    ':Ronnenberg_current' => $dataObject->data['infected-total-distribution-by-municipalities']['data'][13][1],
-                    ':Ronnenberg_sincebegin' => $dataObject->data['infected-total-distribution-by-municipalities']['data'][13][2],
-                    ':Seelze_current' => $dataObject->data['infected-total-distribution-by-municipalities']['data'][14][1],
-                    ':Seelze_sincebegin' => $dataObject->data['infected-total-distribution-by-municipalities']['data'][14][2],
-                    ':Sehnde_current' => $dataObject->data['infected-total-distribution-by-municipalities']['data'][15][1],
-                    ':Sehnde_sincebegin' => $dataObject->data['infected-total-distribution-by-municipalities']['data'][15][2],
-                    ':Springe_current' => $dataObject->data['infected-total-distribution-by-municipalities']['data'][16][1],
-                    ':Springe_sincebegin' => $dataObject->data['infected-total-distribution-by-municipalities']['data'][16][2],
-                    ':Uetze_current' => $dataObject->data['infected-total-distribution-by-municipalities']['data'][17][1],
-                    ':Uetze_sincebegin' => $dataObject->data['infected-total-distribution-by-municipalities']['data'][17][2],
-                    ':Wedemark_current' => $dataObject->data['infected-total-distribution-by-municipalities']['data'][18][1],
-                    ':Wedemark_sincebegin' => $dataObject->data['infected-total-distribution-by-municipalities']['data'][18][2],
-                    ':Wennigsen_current' => $dataObject->data['infected-total-distribution-by-municipalities']['data'][19][1],
-                    ':Wennigsen_sincebegin' => $dataObject->data['infected-total-distribution-by-municipalities']['data'][19][2],
-                    ':Wunstorf_current' => $dataObject->data['infected-total-distribution-by-municipalities']['data'][20][1],
-                    ':Wunstorf_sincebegin' => $dataObject->data['infected-total-distribution-by-municipalities']['data'][20][2]
-            ]);
+                $stmt->execute();
 
             } catch (PDOException $e) {
 

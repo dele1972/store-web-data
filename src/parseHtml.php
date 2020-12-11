@@ -47,7 +47,7 @@ END;
     } catch (Exception $e) {
 
         print "Problems with the database prevent execution.<br/>";
-        rename($real_input_file, AppConfig::$htmlFileOutErrorPath . $file);
+        //rename($real_input_file, AppConfig::$htmlFileOutErrorPath . $file);
         /*
         Code 2002   -> couldn't establish db connection - 
         Code 1049   -> Unknown database 
@@ -87,7 +87,7 @@ END;
         if (!is_object($coronaData)){
 
             echo "<div>Could not parse Data for this document!</div>";
-            rename($real_input_file, AppConfig::$htmlFileOutErrorPath . $file);
+            //rename($real_input_file, AppConfig::$htmlFileOutErrorPath . $file);
             continue;
 
         }
@@ -101,7 +101,7 @@ END;
 
             $obj->storeData($coronaData);
             // move file to processed
-            rename($real_input_file, AppConfig::$htmlFileOutPath . $file);
+            //rename($real_input_file, AppConfig::$htmlFileOutPath . $file);
 
         } catch (Exception $e) {
             
@@ -117,11 +117,11 @@ END;
             // move file to processed/duplicates
             if ($e->getCode()===1062){
 
-                rename($real_input_file, AppConfig::$htmlFileOutDuplicatePath . $file);
+                //rename($real_input_file, AppConfig::$htmlFileOutDuplicatePath . $file);
 
             } else {
 
-                rename($real_input_file, AppConfig::$htmlFileOutErrorPath . $file);
+                //rename($real_input_file, AppConfig::$htmlFileOutErrorPath . $file);
 
             }
 

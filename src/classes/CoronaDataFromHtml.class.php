@@ -1,5 +1,21 @@
 <?php
 
+    /**
+     *
+     * Object{
+     *
+     *   data['document']: string                                                             html dump of the document --> `document`
+     *   data['last-updated']: string(25)                                                     date/time published --> `maindata`
+     *   data['seven_day_incidence']: string                                                  seven day incidence region cumulative --> `maindata`
+     *   data['infected-total']: int                                                          infected region cumulative --> `maindata`
+     *   data['recovered-total']: int                                                         recovered region cumulative --> `maindata`
+     *   data['deceased-total']: int                                                          deceased region cumulative --> `maindata`
+     *   data['infected-total-distribution-by-age']: Array ['head'][], ['data'][]             table data: distribution by age --> `distribution_age`, `document`
+     *   data['infected-total-distribution-by-sex']: Array ['head'][], ['data'][]             table data: distribution by sex --> `distribution_sex`, `document`
+     *   data['infected-total-distribution-by-municipalities']: Array ['head'][], ['data'][]  table data: distribution by community --> `distribution_municipalities`, `document`
+     *
+     * }
+     */
     class CoronaDataFromHtml {
 
         public $data;

@@ -523,6 +523,38 @@ END;
         }
 
 
+        /**
+         * Has table `distribution_municipalities` columns within 'sevendayin'?
+         * These columns for each community is added since 2020-10-02.
+         *
+         * @return bool   (true - sevendayin cols are given, false - not)
+         */
+        private function checkSevenDayInCol():bool {
+
+            $stmt = $this->pdo->query("SHOW COLUMNS FROM `distribution_municipalities` LIKE '%_sevendayin'");
+            return !is_bool($stmt->fetch());
+
+        }
+
+
+        private function alterDistribMunicTableSevenDayIn() {
+
+            $sql = "ALTER TABLE distribution_municipalities";
+
+            // add community to sql with each given column
+            // @ToDo recursive or with second foreach ["_current", "_sincebegin", "_sevendayin"]
+            foreach ($this->municipalities as $element) {
+
+              $sql .= " ADD " . $element . "_sevendayin DOUBLE(8,1) DEFAULT NULL,";
+
+            }
+            
+            $sql = $this->last_substr_replace(",", ";", $sql);
+
+            return $this->pdo->exec($sql);
+
+        }
+
         public function storeData(CoronaDataFromHtml $dataObject) {
 
             try {
@@ -545,5 +577,49 @@ END;
             }
 
         }
+
+
+        public function updateDbStructure() {
+
+          echo '<h1>Update</h1>';
+          if (!$this->checkSevenDayInCol()) {
+
+            echo "... Table 'distribution_municipalities' has no '_sevendayin' Columns -> will be fixed now.";
+            $this->alterDistribMunicTableSevenDayIn();
+
+          }
+
+        }
+
+
+        /**
+         * search for a given datetime string in maindata and returns the entry_id or
+         * throws an error
+         *
+         * @param string $datestring searchstring with a datetime value
+         *
+         * @throws EntryIdCouldNotBeDeterminedException if the date/time string has no match
+         *
+         * @return int entry_id
+         */
+        public function getEntryIdByDateString (String $datestring): int {
+            
+          $sql = "SELECT `entry_id` from `maindata` WHERE `lastupdated_string` = '$datestring';";
+          $stmnt = $this->pdo->query($sql);
+          $result = $stmnt->fetch()["entry_id"];
+
+          if ($result === NULL) {
+
+            throw new EntryIdCouldNotBeDeterminedException();
+
+          }
+
+          return (int)$result;
+        
+        }
+    }
+
+    class EntryIdCouldNotBeDeterminedException extends Exception {
+      // https://stackoverflow.com/a/4733511
     }
 ?>

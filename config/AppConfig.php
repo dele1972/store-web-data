@@ -4,6 +4,7 @@
         protected static $_instance = null;
         
         static $htmlFileInputPath = '../samples/';
+        static $htmlFileUpdatePath = '../updates/';
         static $htmlFileOutPath = '../processed/';
         static $htmlFileOutDuplicatePath = '../processed/duplicate/';
         static $htmlFileOutErrorPath = '../processed/error/';

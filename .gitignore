@@ -1,3 +1,5 @@
 config/
 processed/
 samples/
+.php_cs.cache
+tags

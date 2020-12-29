@@ -122,7 +122,16 @@ END;
 
        echo "<h2>ID = '$temp'</h2>";
        // maindata & lastupdated_string -> entry_id
+       try {
 
+         $temp = $obj->checkAndUpdateTables($coronaData);
+
+       } catch (EntryIdCouldNotBeDeterminedException $e) {
+
+         echo "abgefangen<br/>";
+         continue;
+
+       }
     /**
      *
      * Object{

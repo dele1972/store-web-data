@@ -602,6 +602,9 @@ END;
                      'distribution_sex',
                      'distribution_municipalities',
             ];
+            foreach ($tables2check as $tableName) {
+                echo "<br /> $tableName";
+            }
             //
             //     +++ table maindata +++
             //
@@ -634,6 +637,19 @@ END;
             $sql = "SELECT * from `document` WHERE `entry_id` = '$entryID';";
             $stmnt = $this->pdo->query($sql);
             $result = $stmnt->fetch(PDO::FETCH_ASSOC);
+
+            // https://stackoverflow.com/questions/369602/deleting-an-element-from-an-array-in-php
+            // @TODO: HIER BIN ICH!!! 2020-12-30
+            foreach ($db_excludes as $excludeTable) {
+                echo "<br /> $excludeTable";
+                array_splice(
+                    $result,
+                    array_search($excludeTable, array_keys($db_excludes)),
+                    1
+                );
+            }
+
+
             foreach (array_keys((array)$result) as &$tempKey) {
                 if (!in_array($tempKey, $db_excludes)) {
                     if (strpos($tempKey, 'array') !== false) {

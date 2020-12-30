@@ -27,10 +27,8 @@ END;
     $counter_processed_files = 0;
 
     if ($count_files === 0) {
-
         print "<h1> No files for processing found</h1></body></html>";
         return;
-
     }
 
     $database_data['host'] = AppConfig::$db_host;
@@ -41,16 +39,13 @@ END;
 
 
     try {
-
         $obj = new Model($database_data);
-
     } catch (Exception $e) {
-
         print "Problems with the database prevent execution.<br/>";
-        //rename($real_input_file, AppConfig::$htmlFileOutErrorPath . $file);
+        rename($real_input_file, AppConfig::$htmlFileOutErrorPath . $file);
         /*
-        Code 2002   -> couldn't establish db connection - 
-        Code 1049   -> Unknown database 
+        Code 2002   -> couldn't establish db connection -
+        Code 1049   -> Unknown database
         Code 1044   -> DB Access denied or db user unknown
         Code 1045   -> DB Access denied - wrong password
         */
@@ -58,7 +53,6 @@ END;
         // print "<br />Code: " . $e->getCode();
 
         return;
-
     }
     
     foreach ($files as $file) {
@@ -72,10 +66,8 @@ END;
         $domDocument = getDomDocument($real_input_file);
 
         try {
-            
             $coronaData = new CoronaDataFromHtml($domDocument);
             #$coronaData = new CoronaDataFromHtml(new stdClass());  // for testing an empty object parameter
-        
         } catch (TypeError $e) {
             // logging? move file to processed/failed/nodom?
             //    Constructor Parameter Type is not a DomDocument Object
@@ -84,25 +76,21 @@ END;
             //    Constructor has got xpath Problems
         }
 
-        if (!is_object($coronaData)){
-
+        if (!is_object($coronaData)) {
             echo "<div>Could not parse Data for this document!</div>";
-            //rename($real_input_file, AppConfig::$htmlFileOutErrorPath . $file);
+            rename($real_input_file, AppConfig::$htmlFileOutErrorPath . $file);
             continue;
-
         }
         
         $coronaData->setSourceFileName($file);
         // @ToDo - this debug output is important to get the wrong recovered and deceased count!
-        $coronaData->printData(FALSE);
+        $coronaData->printData(false);
 
         // store data to database and move the file
         try {
-
             $obj->storeData($coronaData);
             // move file to processed
-            //rename($real_input_file, AppConfig::$htmlFileOutPath . $file);
-
+            rename($real_input_file, AppConfig::$htmlFileOutPath . $file);
         } catch (Exception $e) {
             
             /*
@@ -115,18 +103,12 @@ END;
             print "<br />Code: " . $e->getCode();
 
             // move file to processed/duplicates
-            if ($e->getCode()===1062){
-
-                //rename($real_input_file, AppConfig::$htmlFileOutDuplicatePath . $file);
-
+            if ($e->getCode()===1062) {
+                rename($real_input_file, AppConfig::$htmlFileOutDuplicatePath . $file);
             } else {
-
-                //rename($real_input_file, AppConfig::$htmlFileOutErrorPath . $file);
-
+                rename($real_input_file, AppConfig::$htmlFileOutErrorPath . $file);
             }
-
         }
-
     }
 
     echo <<<END
@@ -135,8 +117,8 @@ END;
 END;
 
 
-    function getDomDocument(string $htmlSourceFileName):DomDocument {
-
+    function getDomDocument(string $htmlSourceFileName):DomDocument
+    {
         $htmlContent = file_get_contents($htmlSourceFileName);
 
         $document = new DomDocument();
@@ -145,19 +127,15 @@ END;
         libxml_use_internal_errors(true);
 
         // UTF-8 WAS NOT SET and will be fixed
-        if( !strpos( $htmlContent, "charset=UTF-8" ) !== false) {
+        if (!strpos($htmlContent, "charset=UTF-8") !== false) {
 
             // echo "UTF-8 WAS NOT SET and will be fixed";
             $document->loadHTML('<?xml version="1.0" encoding="UTF-8"?>' . $htmlContent);
             return $document;
-
         }
 
         // UTF-8 was set correctly, only regular loading is neccessary
         // echo "UTF-8 was set correctly, only regular loading is neccessary";
         $document->loadHTML($htmlContent);
         return $document;
-
     }
-
-?>

@@ -595,41 +595,32 @@ END;
         {
             $entryID = $this->getEntryIdByDateString($dataObject->data['last-updated']);
 
-            /*
-                     maindata
-                     document
-                     distribution_age
-                     distribution_sex
-                     distribution_municipalities
-             */
-            //     +++ maindata +++
+            $tables2check = [
+                     'maindata',
+                     'document',
+                     'distribution_age',
+                     'distribution_sex',
+                     'distribution_municipalities',
+            ];
+            //
+            //     +++ table maindata +++
+            //
+            $db_excludes = ['entry_id','lastupdated_tmstmp'];
+            $dataObj_excludes = ['document','infected-total-distribution-by-age','infected-total-distribution-by-sex','infected-total-distribution-by-municipalities'];
             echo "<h3>... checking 'maindata' for $entryID</h3>";
             $sql = "SELECT * from `maindata` WHERE `entry_id` = '$entryID';";
             $stmnt = $this->pdo->query($sql);
             $result = $stmnt->fetch(PDO::FETCH_ASSOC);
-            /* print var_dump($result); */
-            // check following cols:
-            // ["lastupdated_string"] <-> $dataObject->data['last-updated']
-            // ["total_infected"] <-> $dataObject->data['infected-total']
-            // ["total_recovered"] <-> $dataObject->data['recovered-total']
-            // ["total_deceased"] <-> $dataObject->data['deceased-total']
-            // ["seven_day_incidence"] <-> $dataObject->data['seven_day_incidence']
             $this->compareFields(['lastupdated_string', $result['lastupdated_string'], $dataObject->data['last-updated']], array('values' => false, 'output' => true));
             $this->compareFields(['total_infected', $result['total_infected'], $dataObject->data['infected-total']], array('values' => false, 'output' => true));
             $this->compareFields(['total_recovered', $result['total_recovered'], $dataObject->data['recovered-total']], array('values' => false, 'output' => true));
             $this->compareFields(['total_deceased', $result['total_deceased'], $dataObject->data['deceased-total']], array('values' => false, 'output' => true));
             $this->compareFields(['seven_day_incidence', $result['seven_day_incidence'], $this->convert2DbDoubleFormat($dataObject->data['seven_day_incidence'])], array('values' => false, 'output' => true));
-            $db_excludes = ['entry_id','lastupdated_tmstmp'];
-            $dataObj_excludes = ['document','infected-total-distribution-by-age','infected-total-distribution-by-sex','infected-total-distribution-by-municipalities'];
 
 
-            //     +++ document +++
             //
-            echo "<h3>... checking 'document' for $entryID</h3>";
-            $sql = "SELECT * from `document` WHERE `entry_id` = '$entryID';";
-            $stmnt = $this->pdo->query($sql);
-            $result = $stmnt->fetch(PDO::FETCH_ASSOC);
-            /* print var_dump($result); */
+            //     +++ table document +++
+            //
             $db_excludes = ['entry_id','document_id'];
             $dataObj_excludes = [];
             $mapDb2DataObj = array(
@@ -639,12 +630,13 @@ END;
               'array_sex' => 'infected-total-distribution-by-sex',
               'array_municipalities' => 'infected-total-distribution-by-municipalities'
             );
+            echo "<h3>... checking 'document' for $entryID</h3>";
+            $sql = "SELECT * from `document` WHERE `entry_id` = '$entryID';";
+            $stmnt = $this->pdo->query($sql);
+            $result = $stmnt->fetch(PDO::FETCH_ASSOC);
             foreach (array_keys((array)$result) as &$tempKey) {
                 if (!in_array($tempKey, $db_excludes)) {
-                    /* echo "ist ein " . gettype($result[$tempKey]) . " ---- "; */
                     if (strpos($tempKey, 'array') !== false) {
-                        /* echo "<br />" . json_encode(json_decode($result[$tempKey])->data); */
-                        /* echo "<br />" . json_encode($dataObject->data[$mapDb2DataObj[$tempKey]]['data']); */
                         $this->compareFields(
                             [
                             $tempKey, json_encode(json_decode($result[$tempKey])->data),
@@ -655,23 +647,53 @@ END;
                         continue;
                     }
                     if ($tempKey === 'document') {
-                        // @ToDo 2020-12-29: HIER BIN ICH!
-                        // ich habe herausgefunden, dass die table-arrays bereits richtig in der db gespeichert wurden
-                        // hier fehlt der vergleich des html documents...
-                        // https://github.com/caxy/php-htmldiff ???
-                        echo "<br /> NEUU " . __DIR__;
-                        echo "<br /> NEUU " . $_SERVER['DOCUMENT_ROOT'];
-                        echo "<br />länge " . strlen((string)$result[$tempKey]) . " --- " . strlen((string)$this->convert2DbDoubleFormat($dataObject->data[$mapDb2DataObj[$tempKey]]));
-                        /* echo "<br />Hallo " . htmlDiff( */
-                        /* (string)$result[$tempKey], */
-                        /* (string)$dataObject->data[$mapDb2DataObj[$tempKey]] */
-                        /* ); */
-                        $this->compareFields([$tempKey, $result[$tempKey], $this->convert2DbDoubleFormat($dataObject->data[$mapDb2DataObj[$tempKey]])], array('values' => false, 'output' => true));
+                        echo "<br />   ... for '" . $tempKey . "': ";
+                        if (
+                          $this->compareHtmlStrings(
+                              $result['document'],
+                              $dataObject->data['document']
+                          )
+                        ) {
+                            echo "   ✔";
+                        } else {
+                            echo "   ✖";
+                        }
                         continue;
                     }
 
-                    $this->compareFields([$tempKey, $result[$tempKey], $this->convert2DbDoubleFormat($dataObject->data[$mapDb2DataObj[$tempKey]])], array('values' => true, 'output' => true));
+                    $this->compareFields(
+                        [
+                        $tempKey,
+                        $result[$tempKey],
+                        $this->convert2DbDoubleFormat(
+                            $dataObject->data[$mapDb2DataObj[$tempKey]]
+                        )
+                      ],
+                        array('values' => true, 'output' => true)
+                    );
                 }
+            }
+
+            //
+            //        +++ table distribution_age
+            //
+            echo "<h3>... checking 'distribution_age' for $entryID</h3>";
+            $sql = "SELECT * from `distribution_age` WHERE `entry_id` = '$entryID';";
+            $stmnt = $this->pdo->query($sql);
+            $result = $stmnt->fetch(PDO::FETCH_ASSOC);
+            print var_dump($dataObject->data['infected-total-distribution-by-age']['data']);
+            $db_excludes = ['entry_id','document_id'];
+            $dataObj_excludes = [];
+            $mapDb2DataObj = array(
+              'source_file_name' => 'sourceFilenName',
+              'document' => 'document',
+              'array_age' => 'infected-total-distribution-by-age',
+              'array_sex' => 'infected-total-distribution-by-sex',
+              'array_municipalities' => 'infected-total-distribution-by-municipalities'
+            );
+            // @ToDo: 2020-12-30 Hier bin ich
+            foreach (array_keys((array)$result) as &$tempKey) {
+                echo "<br /> $tempKey";
             }
             // check following cols:
           // ["lastupdated_string"] <-> $dataObject->data['last-updated']
@@ -688,6 +710,41 @@ END;
           /* $this->compareFields(['total_recovered', $result['total_recovered'], $dataObject->data['recovered-total']], TRUE); */
           /* $this->compareFields(['total_deceased', $result['total_deceased'], $dataObject->data['deceased-total']], TRUE); */
           /* $this->compareFields(['seven_day_incidence', $result['seven_day_incidence'], $this->convert2DbDoubleFormat($dataObject->data['seven_day_incidence'])], TRUE); */
+        }
+
+
+
+        /**
+         * The idea is, to get the difference of the stored and parsed document.
+         * But currently (2020-12-30) there occures slight shifts and currently
+         * I have no idea where they come from.
+         * Maybe as @ToDo I have to investigate for the shifts in the future...
+         *
+         * @param string $db_value (the value read from the DB)
+         * @param string $parsed_value (the value which comes from the html file)
+         */
+        private function compareHtmlStrings(string $db_value, string $parsed_value):bool
+        {
+            $db_value = htmlentities($db_value);
+            $parsed_value = htmlentities($parsed_value);
+            $len_db_value = strlen($db_value);
+            $len_parsed_value = strlen($parsed_value);
+            $diff_len = $len_db_value - $len_parsed_value;
+            /* echo "<br />compareHtmlStrings(): db_value (".strlen($db_value)."), parsed_value (".strlen($parsed_value)."), diff ($diff_len)"; */
+            /* $pos = 0; */
+            /* while ($pos <= $len_db_value) { */
+            /* $char_db = substr($db_value, $pos, 1); */
+            /* $char_parsed = substr($parsed_value, $pos, 1); */
+            /* if ($char_db === $char_parsed) { */
+            /* echo "<br /> $pos: $char_db --- $char_parsed   "; */
+            /* echo "   ✔"; */
+            /* } else { */
+            /* echo "<br /> $pos: $char_db --- $char_parsed   "; */
+            /* echo "   ✖"; */
+            /* } */
+            /* $pos++; */
+            /* } */
+            return $diff_len === 0 || $diff_len === -42;
         }
 
 

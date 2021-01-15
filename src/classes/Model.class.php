@@ -639,7 +639,6 @@ END;
             $result = $stmnt->fetch(PDO::FETCH_ASSOC);
 
             // https://stackoverflow.com/questions/369602/deleting-an-element-from-an-array-in-php
-            // @TODO: HIER BIN ICH!!! 2020-12-30
             foreach ($db_excludes as $excludeTable) {
                 echo "<br /> $excludeTable";
                 array_splice(
@@ -707,9 +706,11 @@ END;
               'array_sex' => 'infected-total-distribution-by-sex',
               'array_municipalities' => 'infected-total-distribution-by-municipalities'
             );
-            // @ToDo: 2020-12-30 Hier bin ich
+            //
+            // @ToDo: 2021-01-15 Hier bin ich
+            //
             foreach (array_keys((array)$result) as &$tempKey) {
-                echo "<br /> $tempKey";
+                echo "<br /> HIER ----  $tempKey";
             }
             // check following cols:
           // ["lastupdated_string"] <-> $dataObject->data['last-updated']

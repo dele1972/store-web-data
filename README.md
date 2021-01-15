@@ -10,6 +10,15 @@ store captured data to my db
     - ... store data in DB 
   - everytime - archive both files
     - delete original files
+- update
+  - several times the base html is changed in the structure or by adding more information
+    - [ ] 2020-10-02 start 7 day incidence (in 1st paragraph)
+      - [x] implemented (but not updated)
+    - [ ] 2020-10-19 start 7 day incidence (as another col)
+    - [ ] 2020-10-28 till this filedate the above updates has to be updated
+    - [ ] 2021-01-04 new 1st paragraph detected
+    - [ ] 2021-01-08 strange 1st paragraph detected
+    - [ ] 2021-01-12 tables are presented in another order
 - logging?
 - classes
 - simplify
